@@ -5,4 +5,4 @@ A Go implementation of Hochbaum's PseudoFlow algorithm as [implemented here in C
 Incipient: under development and needs lots of work.  
 
 
-[c_ref]:http://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html
+[c_ref]: http://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html
