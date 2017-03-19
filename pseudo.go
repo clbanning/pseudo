@@ -1,27 +1,32 @@
 // pseudo.go implements pseudo3.23 support functions.
 // See pseudo/cmd for CLI app.
 
+// NOTES:
+// 1. Input is from stdin - c_src#readDimacsFileCreateList.
+//    This looks a little cludgy.  main() should pass in a file
+//    handle that may be os.Stdin.
+// 2. Replace timer logic with more convential profiling logic.
+// 3. In RecoverFlow() use gap value based on pseudoCtx.Lowestlabel value.
+// 4. All timing/profiling is out in main() - so don't include in this package.
+
 package pseudo
 
 import (
 	"fmt"
-	"json"
-	// "time"
-
-	"github.com/clbanning/checkjson"
+	"os"
 )
 
 // global variables
-var numNodes uint
-var numArcs uint
+var numnodes uint
+var numarcs uint
 var source uint
 var sink uint
 var lowestStrongLabel uint
 var highestStrongLabel uint
-var adjacencyList *Node
-var strongRoots *Root
-var labelCount []uint // index'd to len(Nodes), grows with NewNode
-var arcList *Arc
+var adjacencyList *node
+var strongroots *root
+var labelCount []uint // index'd to len(nodes), grows with Newnode
+var arcList *arc
 
 // local context
 
@@ -37,100 +42,52 @@ func init() {
 	labelCount = make([]uint, 0)
 }
 
-var pseudoCtx context
+// the arc object
 
-// Need a config to parse a JSON file with runtime settings.
-// This is called by an init() perhaps with a default file name of "./pseudo.json"
-// or "pseudo.config".  The init() can also handle CLI flags to override default
-// settings.
-func Config(file string) error {
-	// read file into an array of JSON objects
-	objs, err := checkjson.ReadJSONFile(file)
-	if err != nil {
-		return fmt.Errorf("config file: %s - %s", file, err.Error())
-	}
-
-	// get a JSON object that has "config":"pseudo" key:value pair
-	type config struct {
-		Config string
-	}
-	var ctxset bool // make sure just one pseudo config entry
-	for n, obj := range objs {
-		c := new(config)
-		// unmarshal the object - and try and retrule a meaningful error
-		if err := json.Unmarshal(obj, c); err != nil {
-			return fmt.Errorf("parsing config file: %s entry: %d - %s",
-				fn, n+1, checkjson.ResolveJSONError(obj, err).Error())
-		}
-		switch strings.ToLower(c.Config) {
-		case "pseudo":
-			if ctxset {
-				return fmt.Errorf("duplicate 'pseudo' entry in config file: %s entry: %d", file, n)
-			}
-			if err := checkjson.Validate(obj, pseudoCtx); err != nil {
-				return fmt.Errorf("checking pseudo config JSON object: %s", err)
-			}
-			if err := json.Unmarshal(obj, &pseudoCtx); err != nil {
-				return fmt.Errorf("config file: %s - %s", file, err)
-			}
-			ctxset = true
-		default:
-			// return fmt.Errorf("unknown config option in config file: %s entry: %d", file, n+1)
-			// for now, just ignore stuff we're not interested in
-		}
-	}
-	if !ctxset {
-		return fmt.Errorf("no pseudo config object in %s", file)
-	}
-	return nil
-}
-
-// the Arc object
-
-type Arc struct {
-	from      *Node
-	to        *Node
+type arc struct {
+	from      *node
+	to        *node
 	flow      uint
 	capacity  uint
 	direction uint
 }
 
-// Initialize a new Arc value.
-func NewArc() *Arc {
-	return &Arc{direction: 1}
+// Initialize a new arc value.
+func newarc() *arc {
+	return &arc{direction: 1}
 }
 
-// the Node object
+// the node object
 
-type Node struct {
+type node struct {
 	visited         uint
 	numAdjacent     uint
 	number          uint
 	label           uint
 	excess          int
-	parent          *Node
-	childList       *Node
-	nextScan        *Node
+	parent          *node
+	childList       *node
+	nextScan        *node
 	numberOutOfTree uint
-	outOfTree       []*Arc // was **Arc in C, looking at CreateOutOfTree, we're dealing with a pool of Arc's
-	nextArc         uint
-	arcToParent     *Arc
-	next            *Node
+	outOfTree       []*arc // was **Arc in C, looking at CreateOutOfTree, we're dealing with a pool of Arc's
+	nextarc         uint
+	arcToParent     *arc
+	next            *node
 }
 
-// NewNode returns an initialized Node value.
-func NewNode(n uint) *Node {
+// Newnode returns an initialized node value.
+func newNode(n uint) *node {
 	labelCount = append(labelCount, uint{})
-	return &Node{number: n}
+	return &node{number: n}
 }
 
-func (n *Node) LiftAll() {
-	var temp *Node
+func (n *node) liftAll() {
+	var temp *node
 	var current = n
 
 	current.nextScan = current.childList
 	labelCount[current.label]--
-	current.label = numNodes
+	current.label = numnodes
 
 	for ; current != nil; current = current.parent {
 		for current.nextScan != nil {
@@ -140,18 +97,18 @@ func (n *Node) LiftAll() {
 			current.nextScan = current.childList
 
 			labelCount[current.label]--
-			current.label = numNodes
+			current.label = numnodes
 		}
 	}
 }
 
-// CreateOutOfTree allocates Arc's for adjacent Nodes.
-func (n *Node) CreateOutOfTree() {
-	n.outOfTree = make([]*Arc, n.numAdjacent) // OK if '0' are allocated
+// createOutOfTree allocates arc's for adjacent nodes.
+func (n *node) createOutOfTree() {
+	n.outOfTree = make([]*arc, n.numAdjacent) // OK if '0' are allocated
 	// runtime handles mallocs and panics on OOM; you'll get a stack trace
 	/*
 		if (nd->numAdjacent)
-			if ((nd->outOfTree = (Arc **) malloc (nd->numAdjacent * sizeof (Arc *))) == NULL)
+			if ((nd->outOfTree = (arc **) malloc (nd->numAdjacent * sizeof (Arc *))) == NULL)
 			{
 				printf ("%s Line %d: Out of memory\n", __FILE__, __LINE__);
 				exit (1);
@@ -160,45 +117,62 @@ func (n *Node) CreateOutOfTree() {
 	*/
 }
 
-// AddOutOfTreeNode
-func (n *Node) AddOutOfTreeNode(out *Arc) {
+// addOutOfTreenode
+func (n *node) addOutOfTreenode(out *arc) {
 	n.outOfTree[n.numOutOfTree] = out
 	n.numOutOfTree++
 }
 
-// the Root object
+// the root object
 
-type Root struct {
-	start *Node
-	end   *Node
+type root struct {
+	start *node
+	end   *node
 }
 
-//  NewRoot is a wrapper on new(Root) to mimic source.
-func NewRoot() *Root {
-	return new(Root)
+//  Newroot is a wrapper on new(root) to mimic source.
+func newRoot() *root {
+	return new(root)
 }
 
-// Free reinitializes a Root value.
-func (r *Root) Free() {
+// free reinitializes a root value.
+func (r *root) free() {
 	r.start = nil
 	r.end = nil
 }
 
-// AddToStrongBucket may be better as a *Node method ... need to see usage elsewhere.
-func (r *Root) AddToStrongBucket(newRoot *Node) {
+// addToStrongBucket may be better as a *node method ... need to see usage elsewhere.
+func (r *root) addToStrongBucket(n *node) {
 	if pseudoCtx.FifoBucket {
 		if r.start != nil {
-			r.end.next = newRoot
-			r.end = newRoot
-			newRoot.next = nil
+			r.end.next = n
+			r.end = n
+			n.next = nil
 		} else {
-			r.start = newRoot
-			r.end = newRoot
-			newRoot.next = nil
+			r.start = n
+			r.end = n
+			n.next = nil
 		}
 	} else {
-		newRoot.next = r.start
-		r.start = newRoot
+		n.next = r.start
+		r.start = n
 		return
 	}
+}
+
+// ================ public functions =====================
+
+// ReadDimacsFile reads the input and creates list.
+func ReadDimacsFile(fh *os.File) error {
+	return nil
+}
+
+func SimpleInitialization() {
+}
+
+func PseudoFlowPhaseOne() {
+}
+
+// RecoverFlow - internalize setting 'gap' value.
+func RecoverFlow() {
 }
