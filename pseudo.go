@@ -1,12 +1,12 @@
-// pseudo.go implements pseudo3.23 support functions.
-// See pseudo/cmd for CLI app.
+// pseudo.go implements pseudo3.23.
 
 // NOTES:
 // 1. Input is from stdin - c_src#readDimacsFileCreateList.
-//    This looks a little cludgy.  main() should pass in a file
+//    This looks a little cludgy.  main()/Testxxx() should pass in a file
 //    handle that may be os.Stdin.
 // 2. In RecoverFlow() use gap value based on pseudoCtx.Lowestlabel value.
-// 3. All timing/profiling is out in main() - so don't include in this package.
+// 3. All timing/profiling is out in main()/Testxxx - so don't include in this package.
+// 4. main() in C source code is really just a test ... implement in pseudo_test.go.
 
 package pseudo
 
@@ -179,10 +179,10 @@ func ReadDimacsFile(fh *os.File) error {
 
 		switch line[0] {
 		case 'p':
-
 			if _, err := fmt.Sscanf(string(line), "%v %s %d %d", &ch, word, &numNodes, &numArcs); err != nil {
 				return err
 			}
+
 			adjacencyList = make([]*node, numNodes)
 			strongRoots = make([]*root, numNodes)
 			labelCount = make([]uint, numNodes)
@@ -240,10 +240,10 @@ func ReadDimacsFile(fh *os.File) error {
 		from = arcList[i].from.number
 		capacity = arcList[i].capacity
 
-		if !((source == to) || (sink == from) || (from == to)) {
+		if !(source == to || sink == from || from == to) {
 			if source == from && to == sink {
-				arcList[i].flow = capacity
-			} else if from == source {
+				arcList[i].flow = capacit
+			} else if from == source || to != sink {
 				adjacencyList[from-1].addOutOfTreeNode(arcList[i])
 			} else if to == sink {
 				adjacencyList[to-1].addOutOfTreeNode(arcList[i])
