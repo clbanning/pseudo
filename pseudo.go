@@ -11,21 +11,20 @@
 package pseudo
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 )
 
 // global variables
-var numnodes uint
-var numarcs uint
-var source uint
-var sink uint
 var lowestStrongLabel uint
 var highestStrongLabel uint
-var adjacencyList *node
-var strongroots *root
-var labelCount []uint // index'd to len(nodes), grows with Newnode
-var arcList *arc
+var adjacencyList []*node
+var strongRoots []*root
+var arcList []*arc
+var labelCount []uint
+var numNodes, numArcs, source, sink uint
 
 // local context
 
@@ -52,7 +51,7 @@ type arc struct {
 }
 
 // Initialize a new arc value.
-func newarc() *arc {
+func newArc() *arc {
 	return &arc{direction: 1}
 }
 
@@ -76,7 +75,8 @@ type node struct {
 
 // Newnode returns an initialized node value.
 func newNode(n uint) *node {
-	labelCount = append(labelCount, uint{})
+	var u uint
+	labelCount = append(labelCount, u)
 	return &node{number: n}
 }
 
@@ -86,7 +86,7 @@ func (n *node) liftAll() {
 
 	current.nextScan = current.childList
 	labelCount[current.label]--
-	current.label = numnodes
+	current.label = numNodes
 
 	for ; current != nil; current = current.parent {
 		for current.nextScan != nil {
@@ -96,7 +96,7 @@ func (n *node) liftAll() {
 			current.nextScan = current.childList
 
 			labelCount[current.label]--
-			current.label = numnodes
+			current.label = numNodes
 		}
 	}
 }
@@ -104,22 +104,12 @@ func (n *node) liftAll() {
 // createOutOfTree allocates arc's for adjacent nodes.
 func (n *node) createOutOfTree() {
 	n.outOfTree = make([]*arc, n.numAdjacent) // OK if '0' are allocated
-	// runtime handles mallocs and panics on OOM; you'll get a stack trace
-	/*
-		if (nd->numAdjacent)
-			if ((nd->outOfTree = (arc **) malloc (nd->numAdjacent * sizeof (Arc *))) == NULL)
-			{
-				printf ("%s Line %d: Out of memory\n", __FILE__, __LINE__);
-				exit (1);
-			}
-		}
-	*/
 }
 
 // addOutOfTreenode
-func (n *node) addOutOfTreenode(out *arc) {
-	n.outOfTree[n.numOutOfTree] = out
-	n.numOutOfTree++
+func (n *node) addOutOfTreeNode(out *arc) {
+	n.outOfTree[n.numberOutOfTree] = out
+	n.numberOutOfTree++
 }
 
 // the root object
@@ -163,6 +153,106 @@ func (r *root) addToStrongBucket(n *node) {
 
 // ReadDimacsFile reads the input and creates list.
 func ReadDimacsFile(fh *os.File) error {
+	var i, capacity, numLines, from, to, first, last uint
+	var word []byte
+	var ch, ch1 byte
+
+	buf := bufio.NewReader(fh)
+	var atEOF bool
+	for {
+		if atEOF {
+			break
+		}
+
+		line, err := buf.ReadBytes('\n')
+		if err != io.EOF {
+			return err
+		} else if err == io.EOF {
+			// ... at EOF with data but no '\n' line termination.
+			// While not necessary for os.STDIN; it can happen in a file.
+			atEOF = true
+		} else {
+			// Strip of EOL.
+			line = line[:len(line)-1]
+		}
+		numLines++
+
+		switch line[0] {
+		case 'p':
+
+			if _, err := fmt.Sscanf(string(line), "%v %s %d %d", &ch, word, &numNodes, &numArcs); err != nil {
+				return err
+			}
+			adjacencyList = make([]*node, numNodes)
+			strongRoots = make([]*root, numNodes)
+			labelCount = make([]uint, numNodes)
+			arcList = make([]*arc, numArcs)
+
+			var i uint
+			for i = 0; i < numNodes; i++ {
+				strongRoots[i] = newRoot()
+				adjacencyList[i] = newNode(i + 1)
+				// labelCount already initialized
+			}
+			for i = 0; i < numArcs; i++ {
+				arcList[i] = newArc()
+			}
+			first = 0
+			last = numArcs - 1
+		case 'a':
+			if _, err := fmt.Scanf(string(line), "%v %d %d %d", &ch, &from, &to, &capacity); err != nil {
+				return err
+			}
+			if (from+to)%2 != 0 {
+				arcList[first].from = adjacencyList[from-1]
+				arcList[first].to = adjacencyList[to-1]
+				arcList[first].capacity = capacity
+				first++
+			} else {
+				arcList[last].from = adjacencyList[from-1]
+				arcList[last].to = adjacencyList[to-1]
+				arcList[last].capacity = capacity
+				last--
+			}
+
+			adjacencyList[from-1].numAdjacent++
+			adjacencyList[to-1].numAdjacent++
+		case 'n':
+			if _, err := fmt.Scanf(string(line), "%v  %d %v", &ch, &i, &ch1); err != nil {
+				return err
+			}
+			if ch1 == 's' {
+				source = i
+			} else if ch1 == 't' {
+				sink = i
+			} else {
+				return fmt.Errorf("Unrecognized character %v on line %d\n", ch1, numLines)
+			}
+		}
+	}
+
+	for i = 0; i < numNodes; i++ {
+		adjacencyList[i].createOutOfTree()
+	}
+
+	for i = 0; i < numArcs; i++ {
+		to = arcList[i].to.number
+		from = arcList[i].from.number
+		capacity = arcList[i].capacity
+
+		if !((source == to) || (sink == from) || (from == to)) {
+			if source == from && to == sink {
+				arcList[i].flow = capacity
+			} else if from == source {
+				adjacencyList[from-1].addOutOfTreeNode(arcList[i])
+			} else if to == sink {
+				adjacencyList[to-1].addOutOfTreeNode(arcList[i])
+			} else {
+				adjacencyList[from-1].addOutOfTreeNode(arcList[i])
+			}
+		}
+	}
+
 	return nil
 }
 

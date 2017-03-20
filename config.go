@@ -4,6 +4,8 @@ package pseudo
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/clbanning/checkjson"
 )
@@ -31,7 +33,7 @@ func Config(file string) error {
 		// unmarshal the object - and try and retrule a meaningful error
 		if err := json.Unmarshal(obj, c); err != nil {
 			return fmt.Errorf("parsing config file: %s entry: %d - %s",
-				fn, n+1, checkjson.ResolveJSONError(obj, err).Error())
+				file, n+1, checkjson.ResolveJSONError(obj, err).Error())
 		}
 		switch strings.ToLower(c.Config) {
 		case "pseudo":
