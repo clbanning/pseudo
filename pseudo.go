@@ -5,9 +5,8 @@
 // 1. Input is from stdin - c_src#readDimacsFileCreateList.
 //    This looks a little cludgy.  main() should pass in a file
 //    handle that may be os.Stdin.
-// 2. Replace timer logic with more convential profiling logic.
-// 3. In RecoverFlow() use gap value based on pseudoCtx.Lowestlabel value.
-// 4. All timing/profiling is out in main() - so don't include in this package.
+// 2. In RecoverFlow() use gap value based on pseudoCtx.Lowestlabel value.
+// 3. All timing/profiling is out in main() - so don't include in this package.
 
 package pseudo
 
