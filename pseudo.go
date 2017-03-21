@@ -284,13 +284,44 @@ func ReadDimacsFile(fh *os.File) error {
 
 // SimpleInitialization implements simpleInitialization of C source code.
 func SimpleInitialization() {
+	var i, size uint
+	var tempArc *arc
+
+	size = adjacencyList[source-1].numOutOfTree
+	for i := 0; i < size; i++ {
+		tempArc = adjacencyList[source-1].outOfTree[i]
+		tempArc.flow = tempArc.capacity
+		tempArc.to.excess += tempArc.capacity
+	}
+
+	size = adjacencyList[sink-1].numOutOfTree
+	for i := 0; i < size; i++ {
+		tempArc = adjacencyList[sink-1].outOfTree[i]
+		tempArc.flow = tempArc.capacity
+		tempArc.from.excess -= tempArc.capacity
+	}
+
+	adjacencyList[source-1].excess = 0
+	adjacencyList[sink-1].excess = 0
+
+	for i := 0; i < numNodes; i++ {
+		if adjacencyList[i].excess > 0 {
+			adjacencyList[i].label = 1
+			labelCount[1]++
+			adjacencyList[i].addToStrongBucket(&strongRoots[1])
+		}
+	}
+
+	adjacencyList[source-1].label = numNodes
+	adjacencyList[sink-1].label = 0
+	labelCount[0] = (numNodes - 2) - labelCount[1]
 }
 
 // FlowPhaseOne implements pseudoFlowPhaseOne of C source code.
 func FlowPhaseOne() {
 }
 
-// RecoverFlow implements recoverFlow of C source code. 
+// RecoverFlow implements recoverFlow of C source code.
 // It internalize setting 'gap' value.
 func RecoverFlow() {
 }
