@@ -51,9 +51,10 @@ type arc struct {
 }
 
 // Initialize a new arc value.
-func newArc() *arc {
-	return &arc{direction: 1}
-}
+// in-line
+// func newArc() *arc {
+// 	return &arc{direction: 1}
+// }
 
 // the node object
 
@@ -74,11 +75,12 @@ type node struct {
 }
 
 // Newnode returns an initialized node value.
-func newNode(n uint) *node {
-	var u uint
-	labelCount = append(labelCount, u)
-	return &node{number: n}
-}
+// in-line
+// func newNode(n uint) *node {
+// 	var u uint
+// 	labelCount = append(labelCount, u)
+// 	return &node{number: n}
+// }
 
 func (n *node) liftAll() {
 	var temp *node
@@ -119,10 +121,11 @@ type root struct {
 	end   *node
 }
 
-//  Newroot is a wrapper on new(root) to mimic source.
-func newRoot() *root {
-	return new(root)
-}
+//  newRoot is a wrapper on new(root) to mimic source.
+// in-line
+// func newRoot() *root {
+// 	return new(root)
+// }
 
 // free reinitializes a root value.
 func (r *root) free() {
@@ -190,12 +193,16 @@ func ReadDimacsFile(fh *os.File) error {
 
 			var i uint
 			for i = 0; i < numNodes; i++ {
-				strongRoots[i] = newRoot()
-				adjacencyList[i] = newNode(i + 1)
-				// labelCount already initialized
+				// in-line: strongRoots[i] = newRoot()
+				strongRoots[i] = new(root)
+				// in-line: adjacencyList[i] = &newNode(i + 1)
+				adjacencyList[i] = &node{number: i + 1}
+				var u uint
+				labelCount = append(labelCount, u)
 			}
 			for i = 0; i < numArcs; i++ {
-				arcList[i] = newArc()
+				// in-line: arcList[i] = newArc()
+				arcList[i] = &arc{direction: 1}
 			}
 			first = 0
 			last = numArcs - 1
@@ -242,7 +249,7 @@ func ReadDimacsFile(fh *os.File) error {
 
 		if !(source == to || sink == from || from == to) {
 			if source == from && to == sink {
-				arcList[i].flow = capacit
+				arcList[i].flow = capacity
 			} else if from == source || to != sink {
 				adjacencyList[from-1].addOutOfTreeNode(arcList[i])
 			} else if to == sink {
