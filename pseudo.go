@@ -12,6 +12,7 @@ package pseudo
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -33,6 +34,24 @@ type context struct {
 	DisplayFlow bool
 	LowestLabel bool
 	FifoBucket  bool
+	// Stats       bool // always collect stats, reporting requires call to StatsJSON
+}
+
+type statstics struct {
+	NumPushes   uint `json:"numPushes"`
+	NumMergers  uint `json:"numMergers"`
+	NumRelabels uint `json:"numRelabels"`
+	NumGaps     uint `json:"numGaps"`
+	NumArcScans uint `json:"numArcScans"`
+}
+
+var stats statistics
+
+// StatsJSON returns the runtime stats as a JSON object if they're
+// requested as part of Config - "stats":true.
+func StatsJSON() string {
+	j, _ := json.Marshal(stats)
+	return string(j)
 }
 
 // necessary initialization
@@ -51,7 +70,7 @@ type arc struct {
 }
 
 // Initialize a new arc value.
-// in-line
+// in-lined
 // func newArc() *arc {
 // 	return &arc{direction: 1}
 // }
@@ -75,7 +94,7 @@ type node struct {
 }
 
 // Newnode returns an initialized node value.
-// in-line
+// in-lined
 // func newNode(n uint) *node {
 // 	var u uint
 // 	labelCount = append(labelCount, u)
@@ -122,7 +141,7 @@ type root struct {
 }
 
 //  newRoot is a wrapper on new(root) to mimic source.
-// in-line
+// in-lined
 // func newRoot() *root {
 // 	return new(root)
 // }
@@ -154,7 +173,7 @@ func (r *root) addToStrongBucket(n *node) {
 
 // ================ public functions =====================
 
-// ReadDimacsFile reads the input and creates list.
+// ReadDimacsFile implements readDimacsFile of C source code.
 func ReadDimacsFile(fh *os.File) error {
 	var i, capacity, numLines, from, to, first, last uint
 	var word []byte
@@ -193,15 +212,15 @@ func ReadDimacsFile(fh *os.File) error {
 
 			var i uint
 			for i = 0; i < numNodes; i++ {
-				// in-line: strongRoots[i] = newRoot()
+				// in-lined: strongRoots[i] = newRoot()
 				strongRoots[i] = new(root)
-				// in-line: adjacencyList[i] = &newNode(i + 1)
+				// in-lined: adjacencyList[i] = &newNode(i + 1)
 				adjacencyList[i] = &node{number: i + 1}
 				var u uint
 				labelCount = append(labelCount, u)
 			}
 			for i = 0; i < numArcs; i++ {
-				// in-line: arcList[i] = newArc()
+				// in-lined: arcList[i] = newArc()
 				arcList[i] = &arc{direction: 1}
 			}
 			first = 0
@@ -233,7 +252,7 @@ func ReadDimacsFile(fh *os.File) error {
 			} else if ch1 == 't' {
 				sink = i
 			} else {
-				return fmt.Errorf("Unrecognized character %v on line %d\n", ch1, numLines)
+				return fmt.Errorf("unrecognized character %v on line %d", ch1, numLines)
 			}
 		}
 	}
@@ -263,12 +282,15 @@ func ReadDimacsFile(fh *os.File) error {
 	return nil
 }
 
+// SimpleInitialization implements simpleInitialization of C source code.
 func SimpleInitialization() {
 }
 
-func PseudoFlowPhaseOne() {
+// FlowPhaseOne implements pseudoFlowPhaseOne of C source code.
+func FlowPhaseOne() {
 }
 
-// RecoverFlow - internalize setting 'gap' value.
+// RecoverFlow implements recoverFlow of C source code. 
+// It internalize setting 'gap' value.
 func RecoverFlow() {
 }

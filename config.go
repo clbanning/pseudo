@@ -12,7 +12,14 @@ import (
 
 var pseudoCtx context
 
-// Need a config to parse a JSON file with runtime settings.
+// ConfigJSON returns the runtime context settings that were configured 
+// as a JSON object.
+func ConfigJSON() string {
+	j, _ := json.Marshal(pseudoCtx)
+	return string(j)
+}
+
+// Config parses a JSON file with runtime settings.
 // This is called by an init() perhaps with a default file name of "./pseudo.json"
 // or "pseudo.config".  The init() can also handle CLI flags to override default
 // settings.
