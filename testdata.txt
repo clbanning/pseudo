@@ -1,0 +1,7 @@
+See: http://lpsolve.sourceforge.net/5.5/DIMACS_mcf.htm for a 'small' example.
+ or: http://lpsolve.sourceforge.net/5.5/DIMACS_maxf.htm
+ or: http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
+
+See: http://elib.zib.de/pub/Packages/mp-testdata/mincost/ for multiple (large) examples.
+ or: ftp://dimacs.rutgers.edu/pub/netflow
+

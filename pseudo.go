@@ -235,13 +235,13 @@ func (n *node) pushExcess() {
 	}
 }
 
-// (*node)breakRelationship
+// (*node) breakRelationship
 
-// (*node)addRelationship
+// (*node) addRelationship
 
-// (*node)findWeakNode(weakNode *node)
+// (*node) findWeakNode(weakNode *node)
 
-// (*node)checkChildren
+// (*node) checkChildren
 
 // the root object
 
