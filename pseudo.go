@@ -300,6 +300,9 @@ func ReadDimacsFile(fh *os.File) error {
 		if err != io.EOF {
 			return err
 		} else if err == io.EOF {
+			if len(line) == 0 {
+				break // nothing more to process
+			}
 			// ... at EOF with data but no '\n' line termination.
 			// While not necessary for os.STDIN; it can happen in a file.
 			atEOF = true
