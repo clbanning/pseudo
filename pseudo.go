@@ -69,6 +69,10 @@ type arc struct {
 	direction uint
 }
 
+// (*arc) pushUpward
+
+// (*arc) pushDownward
+
 // Initialize a new arc value.
 // in-lined
 // func newArc() *arc {
@@ -101,6 +105,7 @@ type node struct {
 // 	return &node{number: n}
 // }
 
+// (*node) liftAll
 func (n *node) liftAll() {
 	var temp *node
 	var current = n
@@ -122,16 +127,121 @@ func (n *node) liftAll() {
 	}
 }
 
-// createOutOfTree allocates arc's for adjacent nodes.
+// (*node) createOutOfTree allocates arc's for adjacent nodes.
 func (n *node) createOutOfTree() {
 	n.outOfTree = make([]*arc, n.numAdjacent) // OK if '0' are allocated
 }
 
-// addOutOfTreenode
+// (*node) addOutOfTreenode
 func (n *node) addOutOfTreeNode(out *arc) {
 	n.outOfTree[n.numberOutOfTree] = out
 	n.numberOutOfTree++
 }
+
+// (*node) processRoot. 'n' is 'strongRoot' in C source
+func (n *node) processRoot() {
+	var temp, weakNode *node
+	var out *arc
+
+	strongNode := n
+	n.nextScan = n.childList
+
+	if out = n.findWeakNode(weakNode); out != nil {
+		weakNode.merge(n, out)
+		n.pushExcess()
+		return
+	}
+
+	n.checkChildren()
+
+	for strongNode != nil {
+		for strongNode.nextScan != nil {
+			temp = strongNode.nextScan
+			strongNode.nextScan = strongNode.nextScan.next
+			strongNode = temp
+			strongNode.nextScan = strongNode.childList
+
+			if out = findWeakNode(strongNode, &weakNode); out != nil {
+				weakNode.merge(strongNode, out)
+				strongRoot.pushExcess()
+				return
+			}
+
+			strongNode.checkChildren()
+		}
+
+		if strongNode = strongNode.parent; strongNode != nil {
+			strongNode.checkChildren()
+		}
+	}
+
+	n.addToStrongBucket(strongRoots[strongRoot.label])
+
+	if !pseudoCtx.LowestLabel {
+		highestStrongLabel++
+	}
+}
+
+// (*node) merge. 'n' is 'parent' in C source.
+func (n *node) merge(child *node, newArc *arc) {
+	var oldArc *arc
+	current := child
+	newParent := n
+	var oldParent *node
+
+	stats.NumMergers++ // unlike C source always calc stats
+
+	for current.n != nil {
+		oldArc = current.arcToParent
+		current.arcToParent = newArc
+		oldParent = current.n
+		oldParent.breakRelationship(current)
+		newParent.addRelationship(current)
+
+		newParent = current
+		current = oldParent
+		newArc = oldArc
+		newArc.direction = 1 - newArc.direction
+	}
+
+	current.arcToParent = newArc
+	newParent.addRelationship(current)
+}
+
+// (*node) pushExcess. 'n' is 'strongRoot' in C source.
+func (n *node) pushExcess() {
+	var current, parent *node
+	var arcToParent *arc
+	prevEx := 1
+
+	for current = n; current.excess > 0 && current.parent != nil; current = parent {
+		parent = current.parent
+		prevEx = parent.excess
+
+		arcToParent = current.arcToParent
+
+		if arcToParent.direction > 0 {
+			arcToParent.pushUpward(current, parent, arcToParent.capacity-arcToParent.flow)
+		} else {
+			arcToParent.pushDownward(current, parent, arcToParent.flow)
+		}
+	}
+
+	if current.excess > 0 && prevEx <= 0 {
+		if pseudoCtx.LowestLabel {
+			lowestStrongLabel = current.label
+		}
+		current.addToStrongBucket(ns[current.label])
+	}
+}
+
+// (*node)breakRelationship
+
+// (*node)addRelationship
+
+// (*node)findWeakNode(weakNode *node)
+
+// (*node)checkChildren
 
 // the root object
 
@@ -319,6 +429,19 @@ func SimpleInitialization() {
 
 // FlowPhaseOne implements pseudoFlowPhaseOne of C source code.
 func FlowPhaseOne() {
+	var strongRoot *node
+
+	if pseudoCtx.LowestLable {
+		strongRoot = getLowestStrongRoot
+		for ; strongRoot != nil; strongRoot = getLowestStrongRoot() {
+			strongRoot.processRoot()
+		}
+	} else {
+		strongRoot = getHighestStrongRoot()
+		for ; strongRoot != nil; strongRoot = getHighestStrongRoot() {
+			strongRoot.processRoot()
+		}
+	}
 }
 
 // RecoverFlow implements recoverFlow of C source code.
