@@ -304,7 +304,7 @@ func ReadDimacsFile(fh *os.File) error {
 			// While not necessary for os.STDIN; it can happen in a file.
 			atEOF = true
 		} else {
-			// Strip of EOL.
+			// Strip off EOL.
 			line = line[:len(line)-1]
 		}
 		numLines++
@@ -364,6 +364,10 @@ func ReadDimacsFile(fh *os.File) error {
 			} else {
 				return fmt.Errorf("unrecognized character %v on line %d", ch1, numLines)
 			}
+		case '\n', 'c':
+			continue // catches blank lines and "comment" lines - blank lines not in spec.
+		default:
+			return fmt.Errorf("unknown data: %s", string(line))
 		}
 	}
 
