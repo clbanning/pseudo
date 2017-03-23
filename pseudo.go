@@ -47,8 +47,7 @@ type statstics struct {
 
 var stats statistics
 
-// StatsJSON returns the runtime stats as a JSON object if they're
-// requested as part of Config - "stats":true.
+// StatsJSON returns the runtime stats as a JSON object.
 func StatsJSON() string {
 	j, _ := json.Marshal(stats)
 	return string(j)
