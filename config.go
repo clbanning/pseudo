@@ -10,19 +10,23 @@ import (
 	"github.com/clbanning/checkjson"
 )
 
-var pseudoCtx context
+var pseudoCtx Context
 
-// ConfigJSON returns the runtime context settings that were configured 
-// as a JSON object.
+// ConfigJSON returns the runtime context settings as a JSON object.
 func ConfigJSON() string {
 	j, _ := json.Marshal(pseudoCtx)
 	return string(j)
 }
 
-// Config parses a JSON file with runtime settings.
-// This is called by an init() perhaps with a default file name of "./pseudo.json"
-// or "pseudo.config".  The init() can also handle CLI flags to override default
-// settings.
+// Config parses a file with a JSON object with Context settings - the
+// JSON object in the file is identified by the key:value pair "config":"pseudo".
+// 
+// Example:
+//	{
+//	  "config":"pseudo",
+//	  "lowestlabel": true,
+//	  "fifobucket": true
+//	}
 func Config(file string) error {
 	// read file into an array of JSON objects
 	objs, err := checkjson.ReadJSONFile(file)

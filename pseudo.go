@@ -29,7 +29,8 @@ var numNodes, numArcs, source, sink uint
 
 // local context
 
-type context struct {
+// Context provides optional switches that can be set using Config.
+type Context struct {
 	DisplayCut  bool
 	DisplayFlow bool
 	LowestLabel bool
