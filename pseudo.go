@@ -71,69 +71,69 @@ type arc struct {
 
 // (*arc) pushUpward
 // static inline void
-//(a *arc) func pushUpward(currentArc *arc, child *node, parent *node, resCap int){
-//
-//	var numPushes int
-//	numPushes++
-//
-//	if resCap >= child.excess; {
-//		parent.excess += child.excess
-//		// currentArc.flow is uint and child.excess is an int
-//		currentArcFlow := int(currentArc.flow)
-//		currentArcFlow += child.excess
-//		child.excess = 0
-//		return
-//	}
-//
-//	currentArc.direction = 0
-//	parent.excess += resCap
-//	child.excess -= resCap
-//	currentArc.flow = currentArc.capacity
-//	parent.outOfTree[parent.numOutOfTree] = currentArc
-//	parent.numOutOfTree++
-//	breakRelationship(parent, child)
-//
-//	if Context.LowestLabel {
-//		lowestStrongLabel = child.label
-//	}
-//
-//	addToStrongBucket(child, &strongRoots[child.label])
-//}
+(a *arc) func pushUpward(currentArc *arc, child *node, parent *node, resCap int) {
+
+	var numPushes int
+	numPushes++
+
+	if resCap >= child.excess; {
+		parent.excess += child.excess
+		// currentArc.flow is uint and child.excess is an int
+		currentArcFlow := int(currentArc.flow)
+		currentArcFlow += child.excess
+		child.excess = 0
+		return
+	}
+
+	currentArc.direction = 0
+	parent.excess += resCap
+	child.excess -= resCap
+	currentArc.flow = currentArc.capacity
+	parent.outOfTree[parent.numOutOfTree] = currentArc
+	parent.numOutOfTree++
+	breakRelationship(parent, child)
+
+	if pseudoCtz.LowestLabel {
+		lowestStrongLabel = child.label
+	}
+
+	addToStrongBucket(child, &strongRoots[child.label])
+}
 
 // (*arc) pushDownward
 //static inline void
-//(a *arc) func pushDownward(currentArc *arc, child *node,  parent *node, flow int){
-//
-//	var numPushes int
-//	numPushes++
-//
-//	if flow >= child.excess {
-//		parent.excess += child.excess
-//		// currentArc.flow is uint and child.excess is an int
-//		currentArcFlow := int(currentArc.flow)
-//		currentArcFlow -= child.excess
-//		child.excess = 0
-//	}
-//
-//	currentArc.direction = 1
-//	child.excess -= flow
-//	parent.excess += flow
-//	currentArc.flow = 0
-//	parent.outOfTree[parent.numOutOfTree] = currentArc
-//	parent.numOutOfTree++
-//	breakRelationship(parent, child)
-//
-//	if Context.LowestLabel {
-//		lowestStrongLabel = child.label
-//	}
-//
-//	addToStrongBucket(child, &strongRoots[child.label])
-//}
-// Initialize a new arc value.
-// in-lined
-// func newArc() *arc {
-// 	return &arc{direction: 1}
-// }
+(a *arc) func pushDownward(currentArc *arc, child *node, parent *node, flow int) {
+
+	var numPushes int
+	numPushes++
+
+	if flow >= child.excess {
+		parent.excess += child.excess
+		// currentArc.flow is uint and child.excess is an int
+		currentArcFlow := int(currentArc.flow)
+		currentArcFlow -= child.excess
+		child.excess = 0
+	}
+
+	currentArc.direction = 1
+	child.excess -= flow
+	parent.excess += flow
+	currentArc.flow = 0
+	parent.outOfTree[parent.numOutOfTree] = currentArc
+	parent.numOutOfTree++
+	breakRelationship(parent, child)
+
+	if pseudoCtx.LowestLabel {
+		lowestStrongLabel = child.label
+	}
+
+	addToStrongBucket(child, &strongRoots[child.label])
+}
+Initialize a new arc value.
+in-lined
+func newArc() *arc {
+	return &arc{direction: 1}
+}
 
 // the node object
 
