@@ -129,11 +129,12 @@ type arc struct {
 
 	addToStrongBucket(child, &strongRoots[child.label])
 }
-Initialize a new arc value.
-in-lined
-func newArc() *arc {
-	return &arc{direction: 1}
-}
+
+//Initialize a new arc value.
+//in-lined
+//func newArc() *arc {
+//	return &arc{direction: 1}
+//}
 
 // the node object
 

@@ -20,7 +20,7 @@ func ConfigJSON() string {
 
 // Config parses a file with a JSON object with Context settings - the
 // JSON object in the file is identified by the key:value pair "config":"pseudo".
-// 
+//
 // Example:
 //	{
 //	  "config":"pseudo",
