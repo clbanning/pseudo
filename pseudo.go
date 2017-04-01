@@ -71,10 +71,11 @@ type arc struct {
 
 // (*arc) pushUpward
 // static inline void
-func (a *arc) pushUpward(child, parent *node, resCap int) {
+func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 
 	stats.NumPushes++
-	// Invalid operation because resCap is type uint and child.excess is as int
+	// Invalid operation because resCap is type uint and child.excess is as int hence changed reCap to int
+	// FIXME: there is an error bellow in the if statement and my FORTRAN brain can't see it
 	if resCap >= child.excess; {
 		parent.excess += child.excess
 		a.flow += child.excess // Again uint and int solved by changing arc struct declaration
@@ -89,14 +90,13 @@ func (a *arc) pushUpward(child, parent *node, resCap int) {
 	parent.outOfTree[parent.numberOutOfTree] = a
 	parent.numberOutOfTree++
 	//breakRelationship(parent, child) in c source
-	//a.breakRelationship(child)
 	parent.breakRelationship(child)
 	if pseudoCtx.LowestLabel {
 		lowestStrongLabel = child.label
 	}
 
 	//addToStrongBucket(child, &strongRoots[child.label])
-
+	child.addToStrongBucket(&strongRoots[child.label]) // cannot use type **root as *root hence changed func
 }
 
 // (*arc) pushDownward
@@ -107,9 +107,6 @@ func (a *arc) pushDownward(child *node, parent *node, flow int) {
 
 	if flow >= child.excess {
 		parent.excess += child.excess
-		// currentArc.flow is uint and child.excess is an int
-		//currentArcFlow := int(a.flow)
-		//currentArcFlow -= child.excess
 		a.flow = child.excess // int and uint
 		child.excess = 0
 	}
@@ -121,13 +118,14 @@ func (a *arc) pushDownward(child *node, parent *node, flow int) {
 	parent.outOfTree[parent.numberOutOfTree] = a
 	parent.numberOutOfTree++
 	//breakRelationship(parent, child) in c source
-	//a.breakRelationship(child)
 	parent.breakRelationship(child)
 	if pseudoCtx.LowestLabel {
 		lowestStrongLabel = child.label
 	}
 
 	//addToStrongBucket(child, &strongRoots[child.label])
+	child.addToStrongBucket(&strongRoots[child.label]) // cannot use type **root as *root, changed
+	// declaration of addToStrongBucket to **root
 }
 
 //Initialize a new arc value.
@@ -199,7 +197,7 @@ func (n *node) addOutOfTreeNode(out *arc) {
 func (n *node) processRoot() {
 	var temp, weakNode *node
 	var out *arc
-
+	//FIXME: Something wrong here with strongRoot
 	strongNode := n
 	n.nextScan = n.childList
 
@@ -288,7 +286,7 @@ func (n *node) pushExcess() {
 		if pseudoCtx.LowestLabel {
 			lowestStrongLabel = current.label
 		}
-		current.addToStrongBucket(ns[current.label])
+		current.addToStrongBucket(&strongRoots[current.label]) //type *node does not support indexing was ns[current.label]
 	}
 }
 
@@ -323,6 +321,64 @@ func (n *node) addRelationship(child *node) int {
 }
 
 // (*node) findWeakNode(weakNode *node)
+//static Arc *
+//findWeakNode (Node *strongNode, Node **weakNode)
+//func (a *arc) findWeakNode(weaknode *node){
+func (*node) findWeakNode(weakNode *node) *arc {
+	var i, size uint
+	var out *arc
+	{
+	}
+	var strongNode *node
+
+	size = strongNode.numberOutOfTree
+
+	for i := strongNode.nextArc; i < size; i++ {
+
+		stats.NumArcScans++
+		if pseudoCtx.LowestLabel {
+			if strongNode.outOfTree[i].to.label == lowestStrongLabel-1 {
+				//TODO CHECK SECTION
+				strongNode.nextArc = i
+				out = strongNode.outOfTree[i]
+				(*weakNode) = out.to
+				strongNode.numberOutOfTree --
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				return out
+			}
+			if strongNode.outOfTree[i].from.label == (lowestStrongLabel - 1) {
+				strongNode.nextArc = i
+				out = strongNode.outOfTree[i]
+				(*weakNode) = out.from
+				strongNode.numberOutOfTree --
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				return out
+			}
+		} else {
+			if strongNode.outOfTree[i].to.label == (highestStrongLabel - 1) {
+				strongNode.nextArc = i
+				out = strongNode.outOfTree[i]
+				(*weakNode) = out.to
+				strongNode.numberOutOfTree --
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				return out
+			}
+			if strongNode.outOfTree[i].from.label == (highestStrongLabel - 1) {
+				strongNode.nextArc = i
+				out = strongNode.outOfTree[i]
+				(*weakNode) = out.from
+				strongNode.numberOutOfTree --
+				strongNode.outOfTree[i] = strongNode.outOfTress[strongNode.numberOutOfTree]
+				return out
+			}
+		}
+
+	}
+
+	strongNode.nextArc = strongNode.numberOutOfTree
+	return nil
+
+}
 
 // (*node) checkChildren
 func (n *node) checkChildren() {
@@ -360,25 +416,42 @@ func (r *root) free() {
 	r.end = nil
 }
 
+// RJW: Perhaps this needs to be a node method. rootBucket never declared in c source
 // addToStrongBucket may be better as a *node method ... need to see usage elsewhere.
-func (r *root) addToStrongBucket(n *node) {
+//func (r *root) addToStrongBucket(n *node) {
+//	if pseudoCtx.FifoBucket {
+//		if r.start != nil {
+//			r.end.next = n
+//			r.end = n
+//			n.next = nil
+//		} else {
+//			r.start = n
+//			r.end = n
+//			n.next = nil
+//		}
+//	} else {
+//		n.next = r.start
+//		r.start = n
+//		return
+//	}
+//}
+func (n *node) addToStrongBucket(rootBucket **root) {
 	if pseudoCtx.FifoBucket {
-		if r.start != nil {
-			r.end.next = n
-			r.end = n
+		if rootBucket.start != nil {
+			rootBucket.end.next = n
+			rootBucket.end = n
 			n.next = nil
 		} else {
-			r.start = n
-			r.end = n
+			rootBucket.start = n
+			rootBucket.end = n
 			n.next = nil
 		}
 	} else {
-		n.next = r.start
-		r.start = n
+		n.next = rootBucket.start
+		rootBucket.start = n
 		return
 	}
 }
-
 // ================ public functions =====================
 
 // ReadDimacsFile implements readDimacsFile of C source code.
