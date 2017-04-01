@@ -75,7 +75,7 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 
 	stats.NumPushes++
 	// Invalid operation because resCap is type uint and child.excess is as int hence changed reCap to int
-	// FIXME: there is an error bellow in the if statement and my FORTRAN brain can't see it
+	// FIXME: there is an error below in the if statement and my FORTRAN brain can't see it
 	if resCap >= child.excess; {
 		parent.excess += child.excess
 		a.flow += child.excess // Again uint and int solved by changing arc struct declaration
