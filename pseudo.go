@@ -324,11 +324,10 @@ func (n *node) addRelationship(child *node) int {
 //static Arc *
 //findWeakNode (Node *strongNode, Node **weakNode)
 //func (a *arc) findWeakNode(weaknode *node){
-func (*node) findWeakNode(weakNode *node) *arc {
+func (n *node) findWeakNode(weakNode *node) *arc {
 	var i, size uint
 	var out *arc
-	{
-	}
+
 	var strongNode *node
 
 	size = strongNode.numberOutOfTree
