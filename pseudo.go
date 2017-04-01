@@ -332,7 +332,7 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 
 	size = strongNode.numberOutOfTree
 
-	for i := strongNode.nextArc; i < size; i++ {
+	for i = strongNode.nextArc; i < size; i++ {
 
 		stats.NumArcScans++
 		if pseudoCtx.LowestLabel {
@@ -367,7 +367,7 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 				out = strongNode.outOfTree[i]
 				(*weakNode) = out.from
 				strongNode.numberOutOfTree --
-				strongNode.outOfTree[i] = strongNode.outOfTress[strongNode.numberOutOfTree]
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
 				return out
 			}
 		}
@@ -381,7 +381,6 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 
 // (*node) checkChildren
 func (n *node) checkChildren() {
-	//FIXME
 	for ; n.nextScan != nil; n.nextScan = n.nextScan.next {
 		if n.nextScan.label == n.label {
 			return
