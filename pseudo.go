@@ -200,7 +200,7 @@ func (n *node) processRoot() {
 	strongNode := n
 	n.nextScan = n.childList
 
-	if out = n.findWeakNode(weakNode); out != nil {
+	if out, weakNode = n.findWeakNode(); out != nil {
 		weakNode.merge(n, out)
 		n.pushExcess()
 		return
@@ -215,7 +215,7 @@ func (n *node) processRoot() {
 			strongNode = temp
 			strongNode.nextScan = strongNode.childList
 
-			if out = findWeakNode(strongNode, &weakNode); out != nil {
+			if out, weakNode = findWeakNode(); out != nil {
 				weakNode.merge(strongNode, out)
 				n.pushExcess()
 				return
@@ -320,10 +320,11 @@ func (n *node) addRelationship(child *node) {
 // (*node) findWeakNode(weakNode *node)
 //static Arc *
 //findWeakNode (Node *strongNode, Node **weakNode)
-//func (a *arc) findWeakNode(weaknode *node){
-func (n *node) findWeakNode(weakNode *node) *arc {
+//func (n *node) findWeakNode() (*arc, weakNode *node) {
+func (n *node) findWeakNode() (*arc, *node) {
 	var i, size uint
 	var out *arc
+	var weakNode *node
 
 	size = n.numberOutOfTree
 
@@ -337,7 +338,7 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 				weakNode = out.to
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				return out
+				return out, weakNode
 			}
 			if n.outOfTree[i].from.label == (lowestStrongLabel - 1) {
 				n.nextarc = i
@@ -345,7 +346,7 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 				weakNode = out.from
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				return out
+				return out, weakNode
 			}
 		} else {
 			if n.outOfTree[i].to.label == (highestStrongLabel - 1) {
@@ -354,7 +355,7 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 				weakNode = out.to
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				return out
+				return out, weakNode
 			}
 			if n.outOfTree[i].from.label == (highestStrongLabel - 1) {
 				n.nextarc = i
@@ -362,14 +363,14 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 				weakNode = out.from
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				return out
+				return out, weakNode
 			}
 		}
 
 	}
 
 	n.nextarc = n.numberOutOfTree
-	return nil
+	return nil, nil
 
 }
 
