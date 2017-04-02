@@ -38,7 +38,7 @@ type Context struct {
 	// Stats       bool // always collect stats, reporting requires call to StatsJSON
 }
 
-type statstics struct {
+type statistics struct {
 	NumPushes   uint `json:"numPushes"`
 	NumMergers  uint `json:"numMergers"`
 	NumRelabels uint `json:"numRelabels"`
@@ -64,20 +64,74 @@ func init() {
 type arc struct {
 	from      *node
 	to        *node
-	flow      uint
-	capacity  uint
+	flow      int // Changed from uint to int
+	capacity  int
 	direction uint
 }
 
 // (*arc) pushUpward
+// static inline void
+func (a *arc) pushUpward(child *node, parent *node, resCap int) {
+
+	stats.NumPushes++
+	// Invalid operation because resCap is type uint and child.excess is as int hence changed reCap to int
+	if resCap >= child.excess {
+		parent.excess += child.excess
+		a.flow += child.excess // Again uint and int solved by changing arc struct declaration
+		child.excess = 0
+		return
+	}
+
+	a.direction = 0
+	parent.excess += resCap // int and uint
+	child.excess -= resCap  // int and uint
+	a.flow = a.capacity
+	parent.outOfTree[parent.numberOutOfTree] = a
+	parent.numberOutOfTree++
+	//breakRelationship(parent, child) in c source
+	parent.breakRelationship(child)
+	if pseudoCtx.LowestLabel {
+		lowestStrongLabel = child.label
+	}
+
+	//addToStrongBucket(child, &strongRoots[child.label])
+	child.addToStrongBucket(&strongRoots[child.label]) // cannot use type **root as *root hence changed func
+}
 
 // (*arc) pushDownward
+//static inline void
+func (a *arc) pushDownward(child *node, parent *node, flow int) {
 
-// Initialize a new arc value.
-// in-lined
-// func newArc() *arc {
-// 	return &arc{direction: 1}
-// }
+	stats.NumPushes++
+
+	if flow >= child.excess {
+		parent.excess += child.excess
+		a.flow = child.excess // int and uint
+		child.excess = 0
+	}
+
+	a.direction = 1
+	child.excess -= flow
+	parent.excess += flow
+	a.flow = 0
+	parent.outOfTree[parent.numberOutOfTree] = a
+	parent.numberOutOfTree++
+	//breakRelationship(parent, child) in c source
+	parent.breakRelationship(child)
+	if pseudoCtx.LowestLabel {
+		lowestStrongLabel = child.label
+	}
+
+	//addToStrongBucket(child, &strongRoots[child.label])
+	child.addToStrongBucket(&strongRoots[child.label]) // cannot use type **root as *root, changed
+	// declaration of addToStrongBucket to **root
+}
+
+//Initialize a new arc value.
+//in-lined
+//func newArc() *arc {
+//	return &arc{direction: 1}
+//}
 
 // the node object
 
@@ -142,7 +196,7 @@ func (n *node) addOutOfTreeNode(out *arc) {
 func (n *node) processRoot() {
 	var temp, weakNode *node
 	var out *arc
-
+	//FIXME: Something wrong here with strongRoot
 	strongNode := n
 	n.nextScan = n.childList
 
@@ -175,7 +229,7 @@ func (n *node) processRoot() {
 		}
 	}
 
-	n.addToStrongBucket(strongRoots[strongRoot.label])
+	n.addToStrongBucket(&strongRoots[strongRoot.label])
 
 	if !pseudoCtx.LowestLabel {
 		highestStrongLabel++
@@ -231,17 +285,114 @@ func (n *node) pushExcess() {
 		if pseudoCtx.LowestLabel {
 			lowestStrongLabel = current.label
 		}
-		current.addToStrongBucket(ns[current.label])
+		current.addToStrongBucket(&strongRoots[current.label]) //type *node does not support indexing was ns[current.label]
 	}
 }
 
 // (*node) breakRelationship
+//static inline void
+func (n *node) breakRelationship(child *node) {
+	var current *node
+	oldParent := n
+	child.parent = nil
+
+	if oldParent.childList == child {
+		oldParent.childList = child.next
+		child.next = nil
+		return
+	}
+
+	for current = oldParent.childList; current.next != child; current = current.next { //TODO: check
+		current.next = child.next
+		child.next = nil
+	}
+}
 
 // (*node) addRelationship
+// static inline int
+func (n *node) addRelationship(child *node) int {
+	newParent := n
+	child.parent = newParent
+	child.next = newParent.childList
+	newParent.childList = child
+
+	return 0
+}
 
 // (*node) findWeakNode(weakNode *node)
+//static Arc *
+//findWeakNode (Node *strongNode, Node **weakNode)
+//func (a *arc) findWeakNode(weaknode *node){
+func (n *node) findWeakNode(weakNode *node) *arc {
+	var i, size uint
+	var out *arc
+
+	var strongNode *node
+
+	size = strongNode.numberOutOfTree
+
+	for i = strongNode.nextarc; i < size; i++ {
+
+		stats.NumArcScans++
+		if pseudoCtx.LowestLabel {
+			if strongNode.outOfTree[i].to.label == lowestStrongLabel-1 {
+				//TODO CHECK SECTION
+				strongNode.nextarc = i
+				out = strongNode.outOfTree[i]
+				weakNode = out.to
+				strongNode.numberOutOfTree--
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				return out
+			}
+			if strongNode.outOfTree[i].from.label == (lowestStrongLabel - 1) {
+				strongNode.nextarc = i
+				out = strongNode.outOfTree[i]
+				weakNode = out.from
+				strongNode.numberOutOfTree--
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				return out
+			}
+		} else {
+			if strongNode.outOfTree[i].to.label == (highestStrongLabel - 1) {
+				strongNode.nextarc = i
+				out = strongNode.outOfTree[i]
+				weakNode = out.to
+				strongNode.numberOutOfTree--
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				return out
+			}
+			if strongNode.outOfTree[i].from.label == (highestStrongLabel - 1) {
+				strongNode.nextarc = i
+				out = strongNode.outOfTree[i]
+				weakNode = out.from
+				strongNode.numberOutOfTree--
+				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				return out
+			}
+		}
+
+	}
+
+	strongNode.nextarc = strongNode.numberOutOfTree
+	return nil
+
+}
 
 // (*node) checkChildren
+func (n *node) checkChildren() {
+	for ; n.nextScan != nil; n.nextScan = n.nextScan.next {
+		if n.nextScan.label == n.label {
+			return
+		}
+	}
+
+	labelCount[n.label]--
+	n.label++
+	labelCount[n.label]++
+	// Always collect stats
+	stats.NumRelabels++
+	n.nextarc = 0
+}
 
 // the root object
 
@@ -250,7 +401,7 @@ type root struct {
 	end   *node
 }
 
-//  newRoot is a wrapper on new(root) to mimic source.
+// newRoot is a wrapper on new(root) to mimic source.
 // in-lined
 // func newRoot() *root {
 // 	return new(root)
@@ -262,21 +413,39 @@ func (r *root) free() {
 	r.end = nil
 }
 
+// RJW: Perhaps this needs to be a node method. rootBucket never declared in c source
 // addToStrongBucket may be better as a *node method ... need to see usage elsewhere.
-func (r *root) addToStrongBucket(n *node) {
+//func (r *root) addToStrongBucket(n *node) {
+//	if pseudoCtx.FifoBucket {
+//		if r.start != nil {
+//			r.end.next = n
+//			r.end = n
+//			n.next = nil
+//		} else {
+//			r.start = n
+//			r.end = n
+//			n.next = nil
+//		}
+//	} else {
+//		n.next = r.start
+//		r.start = n
+//		return
+//	}
+//}
+func (n *node) addToStrongBucket(rootBucket **root) {
 	if pseudoCtx.FifoBucket {
-		if r.start != nil {
-			r.end.next = n
-			r.end = n
+		if rootBucket.start != nil {
+			rootBucket.end.next = n
+			rootBucket.end = n
 			n.next = nil
 		} else {
-			r.start = n
-			r.end = n
+			rootBucket.start = n
+			rootBucket.end = n
 			n.next = nil
 		}
 	} else {
-		n.next = r.start
-		r.start = n
+		n.next = rootBucket.start
+		rootBucket.start = n
 		return
 	}
 }
@@ -285,7 +454,8 @@ func (r *root) addToStrongBucket(n *node) {
 
 // ReadDimacsFile implements readDimacsFile of C source code.
 func ReadDimacsFile(fh *os.File) error {
-	var i, capacity, numLines, from, to, first, last uint
+	var i, numLines, from, to, first, last uint
+	var capacity int
 	var word []byte
 	var ch, ch1 byte
 
@@ -404,15 +574,15 @@ func SimpleInitialization() {
 	var i, size uint
 	var tempArc *arc
 
-	size = adjacencyList[source-1].numOutOfTree
-	for i := 0; i < size; i++ {
+	size = adjacencyList[source-1].numberOutOfTree
+	for i = 0; i < size; i++ {
 		tempArc = adjacencyList[source-1].outOfTree[i]
 		tempArc.flow = tempArc.capacity
 		tempArc.to.excess += tempArc.capacity
 	}
 
-	size = adjacencyList[sink-1].numOutOfTree
-	for i := 0; i < size; i++ {
+	size = adjacencyList[sink-1].numberOutOfTree
+	for i = 0; i < size; i++ {
 		tempArc = adjacencyList[sink-1].outOfTree[i]
 		tempArc.flow = tempArc.capacity
 		tempArc.from.excess -= tempArc.capacity
@@ -421,7 +591,7 @@ func SimpleInitialization() {
 	adjacencyList[source-1].excess = 0
 	adjacencyList[sink-1].excess = 0
 
-	for i := 0; i < numNodes; i++ {
+	for i = 0; i < numNodes; i++ {
 		if adjacencyList[i].excess > 0 {
 			adjacencyList[i].label = 1
 			labelCount[1]++
@@ -438,8 +608,8 @@ func SimpleInitialization() {
 func FlowPhaseOne() {
 	var strongRoot *node
 
-	if pseudoCtx.LowestLable {
-		strongRoot = getLowestStrongRoot
+	if pseudoCtx.LowestLabel {
+		strongRoot = getLowestStrongRoot()
 		for ; strongRoot != nil; strongRoot = getLowestStrongRoot() {
 			strongRoot.processRoot()
 		}
@@ -457,7 +627,7 @@ func RecoverFlow() {
 }
 
 // Result returns scan of arc/node results in Dimac syntax.
-// 
+//
 // Example for input file "maxflow.net":
 //	c <header>
 //	c
@@ -472,14 +642,14 @@ func RecoverFlow() {
 //	f 1 3 10
 //	...
 func Result(header string) []string {
-	result := []string{"c"+header, 
-		"c", 
-		"Dimacs-format maximum flow result file", 
+	result := []string{"c" + header,
+		"c",
+		"Dimacs-format maximum flow result file",
 		"generated by pseudo.go",
 		"c",
 		"c Solution"}
 
-	// add Solution 
+	// add Solution
 
 	// add flows
 
