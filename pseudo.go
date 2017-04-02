@@ -35,7 +35,7 @@ type Context struct {
 	DisplayFlow bool
 	LowestLabel bool
 	FifoBucket  bool
-	// Stats       bool // always collect stats, reporting requires call to StatsJSON
+	// Stats       bool // always collect stats, reporting just requires call to StatsJSON
 }
 
 type statistics struct {
@@ -64,7 +64,7 @@ func init() {
 type arc struct {
 	from      *node
 	to        *node
-	flow      int // Changed from uint to int
+	flow      uint
 	capacity  int
 	direction uint
 }
@@ -95,7 +95,8 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 	}
 
 	//addToStrongBucket(child, &strongRoots[child.label])
-	child.addToStrongBucket(&strongRoots[child.label]) // cannot use type **root as *root hence changed func
+	// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
+	child.addToStrongBucket(strongRoots[child.label]) // cannot use type **root as *root hence changed func
 }
 
 // (*arc) pushDownward
@@ -123,7 +124,7 @@ func (a *arc) pushDownward(child *node, parent *node, flow int) {
 	}
 
 	//addToStrongBucket(child, &strongRoots[child.label])
-	child.addToStrongBucket(&strongRoots[child.label]) // cannot use type **root as *root, changed
+	child.addToStrongBucket(strongRoots[child.label]) // cannot use type **root as *root, changed
 	// declaration of addToStrongBucket to **root
 }
 
@@ -196,7 +197,6 @@ func (n *node) addOutOfTreeNode(out *arc) {
 func (n *node) processRoot() {
 	var temp, weakNode *node
 	var out *arc
-	//FIXME: Something wrong here with strongRoot
 	strongNode := n
 	n.nextScan = n.childList
 
@@ -217,7 +217,7 @@ func (n *node) processRoot() {
 
 			if out = findWeakNode(strongNode, &weakNode); out != nil {
 				weakNode.merge(strongNode, out)
-				strongRoot.pushExcess()
+				n.pushExcess()
 				return
 			}
 
@@ -229,7 +229,8 @@ func (n *node) processRoot() {
 		}
 	}
 
-	n.addToStrongBucket(&strongRoots[strongRoot.label])
+	// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
+	n.addToStrongBucket(strongRoots[strongRoot.label])
 
 	if !pseudoCtx.LowestLabel {
 		highestStrongLabel++
@@ -239,9 +240,9 @@ func (n *node) processRoot() {
 // (*node) merge. 'n' is 'parent' in C source.
 func (n *node) merge(child *node, newArc *arc) {
 	var oldArc *arc
+	var oldParent *node
 	current := child
 	newParent := n
-	var oldParent *node
 
 	stats.NumMergers++ // unlike C source always calc stats
 
@@ -285,7 +286,8 @@ func (n *node) pushExcess() {
 		if pseudoCtx.LowestLabel {
 			lowestStrongLabel = current.label
 		}
-		current.addToStrongBucket(&strongRoots[current.label]) //type *node does not support indexing was ns[current.label]
+		// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
+		current.addToStrongBucket(strongRoots[current.label]) //type *node does not support indexing was ns[current.label]
 	}
 }
 
@@ -293,30 +295,26 @@ func (n *node) pushExcess() {
 //static inline void
 func (n *node) breakRelationship(child *node) {
 	var current *node
-	oldParent := n
 	child.parent = nil
 
-	if oldParent.childList == child {
-		oldParent.childList = child.next
+	if n.childList == child {
+		n.childList = child.next
 		child.next = nil
 		return
 	}
 
-	for current = oldParent.childList; current.next != child; current = current.next { //TODO: check
+	for current = n.childList; current.next != child; current = current.next { //TODO: check
 		current.next = child.next
 		child.next = nil
 	}
 }
 
 // (*node) addRelationship
-// static inline int
-func (n *node) addRelationship(child *node) int {
-	newParent := n
-	child.parent = newParent
-	child.next = newParent.childList
-	newParent.childList = child
-
-	return 0
+// static inline int - CLB: strip, calling code doesn't use return value
+func (n *node) addRelationship(child *node) {
+	child.parent = n
+	child.next = n.childList
+	n.childList = child
 }
 
 // (*node) findWeakNode(weakNode *node)
@@ -327,53 +325,50 @@ func (n *node) findWeakNode(weakNode *node) *arc {
 	var i, size uint
 	var out *arc
 
-	var strongNode *node
+	size = n.numberOutOfTree
 
-	size = strongNode.numberOutOfTree
-
-	for i = strongNode.nextarc; i < size; i++ {
-
+	for i = n.nextarc; i < size; i++ {
 		stats.NumArcScans++
 		if pseudoCtx.LowestLabel {
-			if strongNode.outOfTree[i].to.label == lowestStrongLabel-1 {
+			if n.outOfTree[i].to.label == lowestStrongLabel-1 {
 				//TODO CHECK SECTION
-				strongNode.nextarc = i
-				out = strongNode.outOfTree[i]
+				n.nextarc = i
+				out = n.outOfTree[i]
 				weakNode = out.to
-				strongNode.numberOutOfTree--
-				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				n.numberOutOfTree--
+				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
 				return out
 			}
-			if strongNode.outOfTree[i].from.label == (lowestStrongLabel - 1) {
-				strongNode.nextarc = i
-				out = strongNode.outOfTree[i]
+			if n.outOfTree[i].from.label == (lowestStrongLabel - 1) {
+				n.nextarc = i
+				out = n.outOfTree[i]
 				weakNode = out.from
-				strongNode.numberOutOfTree--
-				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				n.numberOutOfTree--
+				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
 				return out
 			}
 		} else {
-			if strongNode.outOfTree[i].to.label == (highestStrongLabel - 1) {
-				strongNode.nextarc = i
-				out = strongNode.outOfTree[i]
+			if n.outOfTree[i].to.label == (highestStrongLabel - 1) {
+				n.nextarc = i
+				out = n.outOfTree[i]
 				weakNode = out.to
-				strongNode.numberOutOfTree--
-				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				n.numberOutOfTree--
+				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
 				return out
 			}
-			if strongNode.outOfTree[i].from.label == (highestStrongLabel - 1) {
-				strongNode.nextarc = i
-				out = strongNode.outOfTree[i]
+			if n.outOfTree[i].from.label == (highestStrongLabel - 1) {
+				n.nextarc = i
+				out = n.outOfTree[i]
 				weakNode = out.from
-				strongNode.numberOutOfTree--
-				strongNode.outOfTree[i] = strongNode.outOfTree[strongNode.numberOutOfTree]
+				n.numberOutOfTree--
+				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
 				return out
 			}
 		}
 
 	}
 
-	strongNode.nextarc = strongNode.numberOutOfTree
+	n.nextarc = n.numberOutOfTree
 	return nil
 
 }
@@ -394,44 +389,6 @@ func (n *node) checkChildren() {
 	n.nextarc = 0
 }
 
-// the root object
-
-type root struct {
-	start *node
-	end   *node
-}
-
-// newRoot is a wrapper on new(root) to mimic source.
-// in-lined
-// func newRoot() *root {
-// 	return new(root)
-// }
-
-// free reinitializes a root value.
-func (r *root) free() {
-	r.start = nil
-	r.end = nil
-}
-
-// RJW: Perhaps this needs to be a node method. rootBucket never declared in c source
-// addToStrongBucket may be better as a *node method ... need to see usage elsewhere.
-//func (r *root) addToStrongBucket(n *node) {
-//	if pseudoCtx.FifoBucket {
-//		if r.start != nil {
-//			r.end.next = n
-//			r.end = n
-//			n.next = nil
-//		} else {
-//			r.start = n
-//			r.end = n
-//			n.next = nil
-//		}
-//	} else {
-//		n.next = r.start
-//		r.start = n
-//		return
-//	}
-//}
 func (n *node) addToStrongBucket(rootBucket **root) {
 	if pseudoCtx.FifoBucket {
 		if rootBucket.start != nil {
@@ -449,6 +406,26 @@ func (n *node) addToStrongBucket(rootBucket **root) {
 		return
 	}
 }
+
+// the root object
+
+type root struct {
+	start *node
+	end   *node
+}
+
+// newRoot is a wrapper on new(root) to mimic source.
+// in-lined
+// func newRoot() *root {
+// 	return new(root)
+// }
+
+// free reinitializes a root value.
+// CLB: don't need in Go - only used as part of freeMemory in C source
+// func (r *root) free() {
+// 	r.start = nil
+// 	r.end = nil
+// }
 
 // ================ public functions =====================
 
@@ -595,7 +572,7 @@ func SimpleInitialization() {
 		if adjacencyList[i].excess > 0 {
 			adjacencyList[i].label = 1
 			labelCount[1]++
-			adjacencyList[i].addToStrongBucket(&strongRoots[1])
+			adjacencyList[i].addToStrongBucket(strongRoots[1])
 		}
 	}
 
@@ -642,16 +619,18 @@ func RecoverFlow() {
 //	f 1 3 10
 //	...
 func Result(header string) []string {
-	result := []string{"c" + header,
+	result := []string{
+		"c" + " " + header,
 		"c",
-		"Dimacs-format maximum flow result file",
-		"generated by pseudo.go",
+		"c Dimacs-format maximum flow result file",
+		"c generated by pseudo.go",
 		"c",
 		"c Solution"}
 
 	// add Solution
 
 	// add flows
+	result = append(result, "c", "c SRC DST FLOW")
 
 	return result
 }
