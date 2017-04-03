@@ -5,7 +5,7 @@
 // 1. Input is from stdin - c_src#readDimacsFileCreateList.
 //    This looks a little cludgy.  main()/Testxxx() should pass in a file
 //    handle that may be os.Stdin.
-// 2. In RecoverFlow() use gap value based on pseudoCtx.Lowestlabel value.
+// 2. In RecoverFlow() use gap value based on PseudoCtx.Lowestlabel value.
 // 3. All timing/profiling is out in main()/Testxxx - so don't include in this package.
 // 4. main() in C source code is really just a test ... implement in pseudo_test.go.
 
@@ -39,6 +39,17 @@ type Context struct {
 	// Stats       bool // always collect stats, reporting just requires call to StatsJSON
 }
 
+// PseudoCtx can also be set from a file using Config, but
+// that requires importing github.com/clbanning/checkjson.
+var PseudoCtx Context
+
+// ConfigJSON returns the runtime context settings as a JSON object.
+func ConfigJSON() string {
+	j, _ := json.Marshal(PseudoCtx)
+	return string(j)
+}
+
+// statistics
 type statistics struct {
 	NumPushes   uint `json:"numPushes"`
 	NumMergers  uint `json:"numMergers"`
@@ -53,11 +64,6 @@ var stats statistics
 func StatsJSON() string {
 	j, _ := json.Marshal(stats)
 	return string(j)
-}
-
-// necessary initialization
-func init() {
-	labelCount = make([]uint, 0)
 }
 
 // ==================== the arc object
@@ -90,7 +96,7 @@ func (a *arc) pushUpward(child *node, parent *node, resCap uint) {
 	parent.numberOutOfTree++
 	//breakRelationship(parent, child) in c source
 	parent.breakRelationship(child)
-	if pseudoCtx.LowestLabel {
+	if PseudoCtx.LowestLabel {
 		lowestStrongLabel = child.label
 	}
 
@@ -119,7 +125,7 @@ func (a *arc) pushDownward(child *node, parent *node, flow uint) {
 	parent.numberOutOfTree++
 	//breakRelationship(parent, child) in c source
 	parent.breakRelationship(child)
-	if pseudoCtx.LowestLabel {
+	if PseudoCtx.LowestLabel {
 		lowestStrongLabel = child.label
 	}
 
@@ -146,9 +152,105 @@ type node struct {
 	nextScan        *node
 	numberOutOfTree uint
 	outOfTree       []*arc // was **Arc in C, looking at CreateOutOfTree, we're dealing with a pool of Arc's
-	nextarc         uint
+	nextArc         uint
 	arcToParent     *arc
 	next            *node
+}
+
+// #ifdef LOWEST_LABEL
+// static Node *
+// getLowestStrongRoot (void) 
+func getLowestStrongRoot() *node {
+	var i uint
+	var strongRoot *node
+
+	if (lowestStrongLabel == 0) {
+		for strongRoots[0].start != nil {
+			strongRoot = strongRoots[0].start
+			strongRoots[0].start = strongRoot.next
+			strongRoot.next = nil
+			strongRoot.label = uint(1)
+
+			labelCount[0]--
+			labelCount[1]++
+			stats.NumRelabels++
+
+			strongRoot.addToStrongBucket (strongRoots[strongRoot.label])
+		}
+		lowestStrongLabel = 1
+	}
+
+	for i=lowestStrongLabel; i<numNodes; i++ {
+		if strongRoots[i].start != nil {
+			lowestStrongLabel = i
+
+			if labelCount[i-1] == 0 {
+				stats.NumGaps++
+				return nil;
+			}
+
+			strongRoot = strongRoots[i].start;
+			strongRoots[i].start = strongRoot.next
+			strongRoot.next = nil
+			return strongRoot
+		}
+	}
+
+	lowestStrongLabel = numNodes
+	return nil
+}
+
+// #else
+
+// static Node *
+// getHighestStrongRoot (void) 
+func getHighestStrongRoot() *node {
+	var i uint
+	var strongRoot *node
+
+	for i=highestStrongLabel; i>0; i-- {
+		if strongRoots[i].start != nil {
+			highestStrongLabel = i
+
+			if labelCount[i-1] > 0 {
+				strongRoot = strongRoots[i].start
+				strongRoots[i].start = strongRoot.next
+				strongRoot.next = nil
+				return strongRoot
+			}
+
+			for strongRoots[i].start != nil {
+				stats.NumGaps++
+				strongRoot = strongRoots[i].start
+				strongRoots[i].start = strongRoot.next
+				liftAll (strongRoot)
+			}
+		}
+	}
+
+	if strongRoots[0].start != nil {
+		return nil
+	}
+
+	for strongRoots[0].start != nil {
+		strongRoot = strongRoots[0].start
+		strongRoots[0].start = strongRoot.next
+		strongRoot.label = 1
+
+		labelCount[0]--
+		labelCount[1]++
+		stats.NumRelabels++
+
+		strongRoot.addToStrongBucket (strongRoots[strongRoot.label])
+	}
+
+	highestStrongLabel = 1
+
+	strongRoot = strongRoots[1].start
+	strongRoots[1].start = strongRoot.next
+	strongRoot.next = nil
+
+	return strongRoot
 }
 
 // Newnode returns an initialized node value.
@@ -214,7 +316,7 @@ func (n *node) processRoot() {
 			strongNode = temp
 			strongNode.nextScan = strongNode.childList
 
-			if out, weakNode = findWeakNode(); out != nil {
+			if out, weakNode = strongNode.findWeakNode(); out != nil {
 				weakNode.merge(strongNode, out)
 				n.pushExcess()
 				return
@@ -229,9 +331,9 @@ func (n *node) processRoot() {
 	}
 
 	// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
-	n.addToStrongBucket(strongRoots[strongRoot.label])
+	n.addToStrongBucket(strongRoots[n.label])
 
-	if !pseudoCtx.LowestLabel {
+	if !PseudoCtx.LowestLabel {
 		highestStrongLabel++
 	}
 }
@@ -270,7 +372,7 @@ func (n *node) merge(child *node, newArc *arc) {
 func (n *node) pushExcess() {
 	var current, parent *node
 	var arcToParent *arc
-	prevEx := 1
+	prevEx := uint(1)
 
 	for current = n; current.excess > 0 && current.parent != nil; current = parent {
 		parent = current.parent
@@ -286,7 +388,7 @@ func (n *node) pushExcess() {
 	}
 
 	if current.excess > 0 && prevEx <= 0 {
-		if pseudoCtx.LowestLabel {
+		if PseudoCtx.LowestLabel {
 			lowestStrongLabel = current.label
 		}
 		// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
@@ -334,12 +436,12 @@ func (n *node) findWeakNode() (*arc, *node) {
 
 	size = n.numberOutOfTree
 
-	for i = n.nextarc; i < size; i++ {
+	for i = n.nextArc; i < size; i++ {
 		stats.NumArcScans++
-		if pseudoCtx.LowestLabel {
+		if PseudoCtx.LowestLabel {
 			if n.outOfTree[i].to.label == lowestStrongLabel-1 {
 				//TODO CHECK SECTION
-				n.nextarc = i
+				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.to
 				n.numberOutOfTree--
@@ -347,7 +449,7 @@ func (n *node) findWeakNode() (*arc, *node) {
 				return out, weakNode
 			}
 			if n.outOfTree[i].from.label == (lowestStrongLabel - 1) {
-				n.nextarc = i
+				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.from
 				n.numberOutOfTree--
@@ -356,7 +458,7 @@ func (n *node) findWeakNode() (*arc, *node) {
 			}
 		} else {
 			if n.outOfTree[i].to.label == (highestStrongLabel - 1) {
-				n.nextarc = i
+				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.to
 				n.numberOutOfTree--
@@ -364,7 +466,7 @@ func (n *node) findWeakNode() (*arc, *node) {
 				return out, weakNode
 			}
 			if n.outOfTree[i].from.label == (highestStrongLabel - 1) {
-				n.nextarc = i
+				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.from
 				n.numberOutOfTree--
@@ -375,7 +477,7 @@ func (n *node) findWeakNode() (*arc, *node) {
 
 	}
 
-	n.nextarc = n.numberOutOfTree
+	n.nextArc = n.numberOutOfTree
 	return nil, nil
 
 }
@@ -393,11 +495,11 @@ func (n *node) checkChildren() {
 	labelCount[n.label]++
 	// Always collect stats
 	stats.NumRelabels++
-	n.nextarc = 0
+	n.nextArc = 0
 }
 
 func (n *node) addToStrongBucket(rootBucket *root) {
-	if pseudoCtx.FifoBucket {
+	if PseudoCtx.FifoBucket {
 		if rootBucket.start != nil {
 			rootBucket.end.next = n
 			rootBucket.end = n
@@ -417,8 +519,8 @@ func (n *node) addToStrongBucket(rootBucket *root) {
 // static void
 // sort (Node * current)
 func (n *node) sort() {
-	if n.numOutOfTree > 1 {
-		quickSort(n.outOfTree, 0, n.numOutOfTree-1)
+	if n.numberOutOfTree > uint(1) {
+		quickSort(n.outOfTree, 0, n.numberOutOfTree-1)
 	}
 }
 
@@ -427,7 +529,7 @@ func (n *node) sort() {
 func (n *node) minisort() {
 	temp := n.outOfTree[n.nextArc]
 	var i uint
-	size := n.numOutOfTree
+	size := n.numberOutOfTree
 	tempflow := temp.flow
 
 	for i := n.nextArc + 1; i < size && tempflow < n.outOfTree[i].flow; i++ {
@@ -613,7 +715,7 @@ func SimpleInitialization() {
 func FlowPhaseOne() {
 	var strongRoot *node
 
-	if pseudoCtx.LowestLabel {
+	if PseudoCtx.LowestLabel {
 		strongRoot = getLowestStrongRoot()
 		for ; strongRoot != nil; strongRoot = getLowestStrongRoot() {
 			strongRoot.processRoot()
