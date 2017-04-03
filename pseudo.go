@@ -18,6 +18,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 )
 
 // global variables
@@ -994,6 +995,28 @@ func Result(header string) []string {
 	return ret
 }
 
+// timing info in case someone wants it as in C source main()
+var timer = struct {
+	start, initialize, flow, recflow time.Time
+}{}
+
+// TimerJSON return timings the 3 processing steps of Run.
+// Note: the file initialization and result marshaling times are not
+// included in result.
+func TimerJSON() string {
+	type times struct {
+		SimpleInitialization, FlowPhaseOne, RecoverFlow, Total time.Duration
+	}
+	data := times{
+		timer.initialize.Sub(timer.start),
+		timer.flow.Sub(timer.initialize),
+		timer.recflow.Sub(timer.flow),
+		timer.recflow.Sub(timer.start),
+	}
+	j, _ := json.Marshal(data)
+	return string(j)
+}
+
 // Run takes an input file and returns Result having
 // called all public functions in sequence. If input == "stdin"
 // then os.Stdin is read.
@@ -1014,9 +1037,13 @@ func Run(input string) ([]string, error) {
 	if err = ReadDimacsFile(fh); err != nil {
 		return nil, err
 	}
+	timer.start = time.Now()
 	SimpleInitialization()
+	timer.initialize = time.Now()
 	FlowPhaseOne()
+	timer.flow = time.Now()
 	RecoverFlow()
+	timer.recflow = time.Now()
 	ret := Result("Data: " + input)
 
 	return ret, nil
