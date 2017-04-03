@@ -32,8 +32,6 @@ var numNodes, numArcs, source, sink uint
 
 // Context provides optional switches that can be set using Config.
 type Context struct {
-	DisplayCut  bool
-	DisplayFlow bool
 	LowestLabel bool
 	FifoBucket  bool
 	// Stats       bool // always collect stats, reporting just requires call to StatsJSON
@@ -159,12 +157,12 @@ type node struct {
 
 // #ifdef LOWEST_LABEL
 // static Node *
-// getLowestStrongRoot (void) 
+// getLowestStrongRoot (void)
 func getLowestStrongRoot() *node {
 	var i uint
 	var strongRoot *node
 
-	if (lowestStrongLabel == 0) {
+	if lowestStrongLabel == 0 {
 		for strongRoots[0].start != nil {
 			strongRoot = strongRoots[0].start
 			strongRoots[0].start = strongRoot.next
@@ -175,21 +173,21 @@ func getLowestStrongRoot() *node {
 			labelCount[1]++
 			stats.NumRelabels++
 
-			strongRoot.addToStrongBucket (strongRoots[strongRoot.label])
+			strongRoot.addToStrongBucket(strongRoots[strongRoot.label])
 		}
 		lowestStrongLabel = 1
 	}
 
-	for i=lowestStrongLabel; i<numNodes; i++ {
+	for i = lowestStrongLabel; i < numNodes; i++ {
 		if strongRoots[i].start != nil {
 			lowestStrongLabel = i
 
 			if labelCount[i-1] == 0 {
 				stats.NumGaps++
-				return nil;
+				return nil
 			}
 
-			strongRoot = strongRoots[i].start;
+			strongRoot = strongRoots[i].start
 			strongRoots[i].start = strongRoot.next
 			strongRoot.next = nil
 			return strongRoot
@@ -203,12 +201,12 @@ func getLowestStrongRoot() *node {
 // #else
 
 // static Node *
-// getHighestStrongRoot (void) 
+// getHighestStrongRoot (void)
 func getHighestStrongRoot() *node {
 	var i uint
 	var strongRoot *node
 
-	for i=highestStrongLabel; i>0; i-- {
+	for i = highestStrongLabel; i > 0; i-- {
 		if strongRoots[i].start != nil {
 			highestStrongLabel = i
 
@@ -223,7 +221,7 @@ func getHighestStrongRoot() *node {
 				stats.NumGaps++
 				strongRoot = strongRoots[i].start
 				strongRoots[i].start = strongRoot.next
-				liftAll (strongRoot)
+				strongRoot.liftAll()
 			}
 		}
 	}
@@ -241,7 +239,7 @@ func getHighestStrongRoot() *node {
 		labelCount[1]++
 		stats.NumRelabels++
 
-		strongRoot.addToStrongBucket (strongRoots[strongRoot.label])
+		strongRoot.addToStrongBucket(strongRoots[strongRoot.label])
 	}
 
 	highestStrongLabel = 1
@@ -260,28 +258,6 @@ func getHighestStrongRoot() *node {
 // 	labelCount = append(labelCount, u)
 // 	return &node{number: n}
 // }
-
-// (*node) liftAll
-func (n *node) liftAll() {
-	var temp *node
-	var current = n
-
-	current.nextScan = current.childList
-	labelCount[current.label]--
-	current.label = numNodes
-
-	for ; current != nil; current = current.parent {
-		for current.nextScan != nil {
-			temp = current.nextScan
-			current.nextScan = current.nextScan.next
-			current = temp
-			current.nextScan = current.childList
-
-			labelCount[current.label]--
-			current.label = numNodes
-		}
-	}
-}
 
 // (*node) createOutOfTree allocates arc's for adjacent nodes.
 func (n *node) createOutOfTree() {
@@ -474,7 +450,6 @@ func (n *node) findWeakNode() (*arc, *node) {
 				return out, weakNode
 			}
 		}
-
 	}
 
 	n.nextArc = n.numberOutOfTree
@@ -496,6 +471,31 @@ func (n *node) checkChildren() {
 	// Always collect stats
 	stats.NumRelabels++
 	n.nextArc = 0
+}
+
+// static void
+// liftAll (Node *rootNode)
+// node.liftAll()
+func (n *node) liftAll() {
+	var temp *node
+	current := n
+
+	current.nextScan = current.childList
+
+	labelCount[current.label]--
+	current.label = numNodes
+
+	for ; current != nil; current = current.parent {
+		for current.nextScan != nil {
+			temp = current.nextScan
+			current.nextScan = current.nextScan.next
+			current = temp
+			current.nextScan = current.childList
+
+			labelCount[current.label]--
+			current.label = numNodes
+		}
+	}
 }
 
 func (n *node) addToStrongBucket(rootBucket *root) {
@@ -536,6 +536,73 @@ func (n *node) minisort() {
 		n.outOfTree[i-1] = n.outOfTree[i]
 	}
 	n.outOfTree[i-1] = temp
+}
+
+// static void
+// decompose (Node *excessNode, const uint source, uint *iteration)
+// CLB: would prefer node.decompose(source) iteration, but keep mainline logic the same
+//  node.decompose(source uint, interation *uint)
+func (n *node) decompose(source uint, iteration *uint) {
+	current := n
+	var tempArc *arc
+	bottleneck := n.excess
+
+	for ; current.number != source && current.visited < *iteration; current = tempArc.from {
+		current.visited = *iteration
+		tempArc = current.outOfTree[current.nextArc]
+
+		if tempArc.flow < bottleneck {
+			bottleneck = tempArc.flow
+		}
+	}
+
+	if current.number == source {
+		n.excess -= bottleneck
+		current = n
+
+		for current.number != source {
+			tempArc = current.outOfTree[current.nextArc]
+			tempArc.flow -= bottleneck
+
+			if tempArc.flow != 0 {
+				current.minisort()
+			} else {
+				current.nextArc++
+			}
+			current = tempArc.from
+		}
+		return
+	}
+
+	*iteration++
+
+	bottleneck = current.outOfTree[current.nextArc].flow
+	for current.visited < *iteration {
+		current.visited = *iteration
+		tempArc = current.outOfTree[current.nextArc]
+
+		if tempArc.flow < bottleneck {
+			bottleneck = tempArc.flow
+		}
+		current = tempArc.from
+	}
+
+	*iteration++
+
+	for current.visited < *iteration {
+		current.visited = *iteration
+
+		tempArc = current.outOfTree[current.nextArc]
+		tempArc.flow -= bottleneck
+
+		if tempArc.flow != 0 {
+			current.minisort()
+			current = tempArc.from
+		} else {
+			current.nextArc++
+			current = tempArc.from
+		}
+	}
 }
 
 // =================== the root object
@@ -728,9 +795,77 @@ func FlowPhaseOne() {
 	}
 }
 
+// static void
+// recoverFlow (const uint gap)
+
 // RecoverFlow implements recoverFlow of C source code.
 // It internalizes setting 'gap' value.
 func RecoverFlow() {
+	// setting gap value is taken out of main() in C source code
+	var gap uint
+	if PseudoCtx.LowestLabel {
+		gap = lowestStrongLabel
+	} else {
+		gap = numNodes
+	}
+
+	var i, j uint
+	iteration := uint(1)
+	var tempArc *arc
+	var tempNode *node
+
+	for i = 0; i < adjacencyList[sink-1].numberOutOfTree; i++ {
+		tempArc = adjacencyList[sink-1].outOfTree[i]
+		if tempArc.from.excess < uint(0) {
+			if tempArc.from.excess+tempArc.flow < uint(0) {
+				tempArc.from.excess += tempArc.flow
+				tempArc.flow = uint(0)
+			} else {
+				tempArc.flow = tempArc.from.excess + tempArc.flow
+				tempArc.from.excess = uint(0)
+			}
+		}
+	}
+
+	for i = 0; i < adjacencyList[source-1].numberOutOfTree; i++ {
+		tempArc = adjacencyList[source-1].outOfTree[i]
+		tempArc.to.addOutOfTreeNode(tempArc)
+	}
+
+	adjacencyList[source-1].excess = uint(0)
+	adjacencyList[sink-1].excess = uint(0)
+
+	for i = 0; i < numNodes; i++ {
+		tempNode = adjacencyList[i]
+		if i == source-1 || i == sink-1 {
+			continue
+		}
+
+		if tempNode.label >= gap {
+			tempNode.nextArc = 0
+			if tempNode.parent != nil && tempNode.arcToParent.flow != 0 {
+				tempNode.arcToParent.to.addOutOfTreeNode(tempNode.arcToParent)
+			}
+
+			for j = 0; j < tempNode.numberOutOfTree; j++ {
+				if tempNode.outOfTree[j].flow != 0 {
+					tempNode.numberOutOfTree--
+					tempNode.outOfTree[j] = tempNode.outOfTree[tempNode.numberOutOfTree]
+					j--
+				}
+			}
+
+			tempNode.sort()
+		}
+	}
+
+	for i = 0; i < numNodes; i++ {
+		tempNode = adjacencyList[i]
+		for tempNode.excess > 0 {
+			iteration++
+			tempNode.decompose(source, &iteration)
+		}
+	}
 }
 
 // Result returns scan of arc/node results in Dimac syntax.
@@ -779,7 +914,6 @@ func Run(input string) ([]string, error) {
 // quickSort (Arc **arr, const uint first, const uint last)
 // CLB: **Arc value is []*arc; slices manipulate the backing array
 func quickSort(arr []*arc, first, last uint) {
-	var i, j, x1, x2, x3, pivot, pivotval uint // don't need "mid"
 	left, right := first, last
 	var swap *arc
 
@@ -801,10 +935,10 @@ func quickSort(arr []*arc, first, last uint) {
 		return
 	}
 
-	pivot = (first + last) / 2
-	x1 = arr[first].flow
-	x2 = arr[pivot].flow // was: arr[mid]
-	x3 = arr[last].flow
+	pivot := (first + last) / 2
+	x1 := arr[first].flow
+	x2 := arr[pivot].flow // was: arr[mid]
+	x3 := arr[last].flow
 
 	if x1 <= x2 {
 		if x2 > x3 {
@@ -822,7 +956,7 @@ func quickSort(arr []*arc, first, last uint) {
 		}
 	}
 
-	pivotval = arr[pivot].flow
+	pivotval := arr[pivot].flow
 	swap = arr[first]
 	arr[first] = arr[pivot]
 	arr[pivot] = swap
