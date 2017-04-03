@@ -236,6 +236,8 @@ func (n *node) processRoot() {
 	}
 }
 
+// static void
+// merge (Node *parent, Node *child, Arc *newArc)
 // (*node) merge. 'n' is 'parent' in C source.
 func (n *node) merge(child *node, newArc *arc) {
 	var oldArc *arc
@@ -248,7 +250,7 @@ func (n *node) merge(child *node, newArc *arc) {
 	for current != nil {
 		oldArc = current.arcToParent
 		current.arcToParent = newArc
-		oldParent = current
+		oldParent = current.parent
 		oldParent.breakRelationship(current)
 		newParent.addRelationship(current)
 
@@ -262,6 +264,8 @@ func (n *node) merge(child *node, newArc *arc) {
 	newParent.addRelationship(current)
 }
 
+// static void
+// pushExcess (Node *strongRoot)
 // (*node) pushExcess. 'n' is 'strongRoot' in C source.
 func (n *node) pushExcess() {
 	var current, parent *node
@@ -290,8 +294,9 @@ func (n *node) pushExcess() {
 	}
 }
 
+// static inline void
+// breakRelationship (Node *oldParent, Node *child)
 // (*node) breakRelationship
-//static inline void
 func (n *node) breakRelationship(child *node) {
 	var current *node
 	child.parent = nil
@@ -302,24 +307,26 @@ func (n *node) breakRelationship(child *node) {
 		return
 	}
 
-	for current = n.childList; current.next != child; current = current.next { //TODO: check
+	for current = n.childList; current.next != child; current = current.next {
 		current.next = child.next
 		child.next = nil
 	}
 }
 
+// static inline int
+// addRelationship (Node *newParent, Node *child)
 // (*node) addRelationship
-// static inline int - CLB: strip, calling code doesn't use return value
+// CLB: implement as static void function, calling code ignores return value
 func (n *node) addRelationship(child *node) {
 	child.parent = n
 	child.next = n.childList
 	n.childList = child
 }
 
-// (*node) findWeakNode(weakNode *node)
-//static Arc *
-//findWeakNode (Node *strongNode, Node **weakNode)
-//func (n *node) findWeakNode() (*arc, weakNode *node) {
+// static Arc *
+// findWeakNode (Node *strongNode, Node **weakNode)
+// (*node) findWeakNode() (*arc, weakNode *node)
+// CLB: avoid pointer-to-pointer handling by also returning computed weakNode
 func (n *node) findWeakNode() (*arc, *node) {
 	var i, size uint
 	var out *arc
