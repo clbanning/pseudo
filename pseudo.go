@@ -667,6 +667,7 @@ func Result(header string) []string {
 
 // static void
 // quickSort (Arc **arr, const uint first, const uint last)
+// CLB: **Arc value is []*arc; slices manipulate the backing array
 func quickSort(arr []*arc, first, last uint) {
 	var i, j, x1, x2, x3, pivot, pivotval uint // don't need "mid"
 	left, right := first, last
