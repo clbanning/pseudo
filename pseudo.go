@@ -1,4 +1,5 @@
 // pseudo.go implements pseudo3.23.
+// MIT license in accompanying LICENSE file.
 
 // NOTES:
 // 1. Input is from stdin - c_src#readDimacsFileCreateList.
@@ -59,25 +60,24 @@ func init() {
 	labelCount = make([]uint, 0)
 }
 
-// the arc object
-
+// ==================== the arc object
 type arc struct {
 	from      *node
 	to        *node
 	flow      uint
-	capacity  int
+	capacity  uint
 	direction uint
 }
 
 // (*arc) pushUpward
 // static inline void
-func (a *arc) pushUpward(child *node, parent *node, resCap int) {
+func (a *arc) pushUpward(child *node, parent *node, resCap uint) {
 
 	stats.NumPushes++
 	// Invalid operation because resCap is type uint and child.excess is as int hence changed reCap to int
 	if resCap >= child.excess {
 		parent.excess += child.excess
-		a.flow += child.excess // Again uint and int solved by changing arc struct declaration
+		a.flow += child.excess
 		child.excess = 0
 		return
 	}
@@ -101,13 +101,13 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 
 // (*arc) pushDownward
 //static inline void
-func (a *arc) pushDownward(child *node, parent *node, flow int) {
+func (a *arc) pushDownward(child *node, parent *node, flow uint) {
 
 	stats.NumPushes++
 
 	if flow >= child.excess {
 		parent.excess += child.excess
-		a.flow = child.excess // int and uint
+		a.flow = child.excess
 		child.excess = 0
 	}
 
@@ -134,14 +134,13 @@ func (a *arc) pushDownward(child *node, parent *node, flow int) {
 //	return &arc{direction: 1}
 //}
 
-// the node object
-
+// ==================== the node object
 type node struct {
 	visited         uint
 	numAdjacent     uint
 	number          uint
 	label           uint
-	excess          int
+	excess          uint
 	parent          *node
 	childList       *node
 	nextScan        *node
@@ -246,10 +245,10 @@ func (n *node) merge(child *node, newArc *arc) {
 
 	stats.NumMergers++ // unlike C source always calc stats
 
-	for current.n != nil {
+	for current != nil {
 		oldArc = current.arcToParent
 		current.arcToParent = newArc
-		oldParent = current.n
+		oldParent = current
 		oldParent.breakRelationship(current)
 		newParent.addRelationship(current)
 
@@ -390,7 +389,7 @@ func (n *node) checkChildren() {
 	n.nextarc = 0
 }
 
-func (n *node) addToStrongBucket(rootBucket **root) {
+func (n *node) addToStrongBucket(rootBucket *root) {
 	if pseudoCtx.FifoBucket {
 		if rootBucket.start != nil {
 			rootBucket.end.next = n
@@ -408,8 +407,29 @@ func (n *node) addToStrongBucket(rootBucket **root) {
 	}
 }
 
-// the root object
+// static void
+// sort (Node * current)
+func (n *node) sort() {
+	if n.numOutOfTree > 1 {
+		quickSort(n.outOfTree, 0, n.numOutOfTree-1)
+	}
+}
 
+// static void
+// minisort (Node *current)
+func (n *node) minisort() {
+	temp := n.outOfTree[n.nextArc]
+	var i uint
+	size := n.numOutOfTree
+	tempflow := temp.flow
+
+	for i := n.nextArc + 1; i < size && tempflow < n.outOfTree[i].flow; i++ {
+		n.outOfTree[i-1] = n.outOfTree[i]
+	}
+	n.outOfTree[i-1] = temp
+}
+
+// =================== the root object
 type root struct {
 	start *node
 	end   *node
@@ -433,7 +453,7 @@ type root struct {
 // ReadDimacsFile implements readDimacsFile of C source code.
 func ReadDimacsFile(fh *os.File) error {
 	var i, numLines, from, to, first, last uint
-	var capacity int
+	var capacity uint
 	var word []byte
 	var ch, ch1 byte
 
@@ -634,4 +654,82 @@ func Result(header string) []string {
 	result = append(result, "c", "c SRC DST FLOW")
 
 	return result
+}
+
+// ======================== quicksort implementation
+
+// static void
+// quickSort (Arc **arr, const uint first, const uint last)
+func quickSort(arr []*arc, first, last uint) {
+	var i, j, x1, x2, x3, pivot, pivotval uint // don't need "mid"
+	left, right := first, last
+	var swap *arc
+
+	// Bubble sort if 5 elements or less
+	if (right - left) <= 5 {
+		for i := right; i > left; i++ {
+			swap = nil
+			for j := left; j < i; j++ {
+				if arr[j].flow < arr[j+1].flow {
+					swap = arr[j]
+					arr[j] = arr[j+1]
+					arr[j+1] = swap
+				}
+			}
+			if swap != nil {
+				return
+			}
+		}
+		return
+	}
+
+	pivot = (first + last) / 2
+	x1 = arr[first].flow
+	x2 = arr[pivot].flow // was: arr[mid]
+	x3 = arr[last].flow
+
+	if x1 <= x2 {
+		if x2 > x3 {
+			pivot = left
+			if x1 <= x3 {
+				pivot = right
+			}
+		}
+	} else {
+		if x2 <= x3 {
+			pivot = right
+			if x1 <= x3 {
+				pivot = left
+			}
+		}
+	}
+
+	pivotval = arr[pivot].flow
+	swap = arr[first]
+	arr[first] = arr[pivot]
+	arr[pivot] = swap
+
+	left = first + 1
+
+	for left < right {
+		if arr[left].flow < pivotval {
+			swap = arr[left]
+			arr[left] = arr[right]
+			arr[right] = swap
+			right--
+		} else {
+			left++
+		}
+	}
+
+	swap = arr[first]
+	arr[first] = arr[left]
+	arr[left] = swap
+
+	if first < (left - 1) {
+		quickSort(arr, first, left-1)
+	}
+	if left+1 < last {
+		quickSort(arr, left+1, last)
+	}
 }
