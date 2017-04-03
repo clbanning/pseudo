@@ -1,7 +1,8 @@
-// config.go - set pseudoCtx from a config file with a "config":"pseudo" JSON object.
+// config.go - set PseudoCtx from a config file with a "config":"pseudo" JSON object.
 
 package pseudo
 
+/* this is commented out unless you want to import github.com/clbanning/checkjson ...
 import (
 	"encoding/json"
 	"fmt"
@@ -10,17 +11,9 @@ import (
 	"github.com/clbanning/checkjson"
 )
 
-var pseudoCtx Context
-
-// ConfigJSON returns the runtime context settings as a JSON object.
-func ConfigJSON() string {
-	j, _ := json.Marshal(pseudoCtx)
-	return string(j)
-}
-
 // Config parses a file with a JSON object with Context settings - the
 // JSON object in the file is identified by the key:value pair "config":"pseudo".
-//
+// 
 // Example:
 //	{
 //	  "config":"pseudo",
@@ -51,10 +44,10 @@ func Config(file string) error {
 			if ctxset {
 				return fmt.Errorf("duplicate 'pseudo' entry in config file: %s entry: %d", file, n)
 			}
-			if err := checkjson.Validate(obj, pseudoCtx); err != nil {
+			if err := checkjson.Validate(obj, PseudoCtx); err != nil {
 				return fmt.Errorf("checking pseudo config JSON object: %s", err)
 			}
-			if err := json.Unmarshal(obj, &pseudoCtx); err != nil {
+			if err := json.Unmarshal(obj, &PseudoCtx); err != nil {
 				return fmt.Errorf("config file: %s - %s", file, err)
 			}
 			ctxset = true
@@ -68,3 +61,4 @@ func Config(file string) error {
 	}
 	return nil
 }
+*/
