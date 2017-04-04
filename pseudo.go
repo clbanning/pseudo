@@ -9,6 +9,12 @@
 // 3. All timing/profiling is out in main()/Testxxx - so don't include in this package.
 // 4. main() in C source code is really just a test ... implement in pseudo_test.go.
 
+// Package pseudo is a port of pseudo3.23 from C to Go.
+// 
+// The easiest way to use this package is to call pseudo.Run(<input file>) after setting
+// the runtime context options, if desired. However it is also possible to call the 
+// individual processing functions - ReadDimacsFile, SimpleInitialization, FlowPhaseOne, 
+// RecoverFlow, Results - sequentially. 
 package pseudo
 
 import (
@@ -80,7 +86,6 @@ type arc struct {
 func (a *arc) pushUpward(child *node, parent *node, resCap uint) {
 
 	stats.NumPushes++
-	// Invalid operation because resCap is type uint and child.excess is as int hence changed reCap to int
 	if resCap >= child.excess {
 		parent.excess += child.excess
 		a.flow += child.excess
@@ -94,15 +99,12 @@ func (a *arc) pushUpward(child *node, parent *node, resCap uint) {
 	a.flow = a.capacity
 	parent.outOfTree[parent.numberOutOfTree] = a
 	parent.numberOutOfTree++
-	//breakRelationship(parent, child) in c source
 	parent.breakRelationship(child)
 	if PseudoCtx.LowestLabel {
 		lowestStrongLabel = child.label
 	}
 
-	//addToStrongBucket(child, &strongRoots[child.label])
-	// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
-	child.addToStrongBucket(strongRoots[child.label]) // cannot use type **root as *root hence changed func
+	child.addToStrongBucket(strongRoots[child.label])
 }
 
 // (*arc) pushDownward
@@ -123,15 +125,12 @@ func (a *arc) pushDownward(child *node, parent *node, flow uint) {
 	a.flow = 0
 	parent.outOfTree[parent.numberOutOfTree] = a
 	parent.numberOutOfTree++
-	//breakRelationship(parent, child) in c source
 	parent.breakRelationship(child)
 	if PseudoCtx.LowestLabel {
 		lowestStrongLabel = child.label
 	}
 
-	//addToStrongBucket(child, &strongRoots[child.label])
-	child.addToStrongBucket(strongRoots[child.label]) // cannot use type **root as *root, changed
-	// declaration of addToStrongBucket to **root
+	child.addToStrongBucket(strongRoots[child.label])
 }
 
 //Initialize a new arc value.
@@ -200,8 +199,6 @@ func getLowestStrongRoot() *node {
 	return nil
 }
 
-// #else
-
 // static Node *
 // getHighestStrongRoot (void)
 func getHighestStrongRoot() *node {
@@ -253,14 +250,6 @@ func getHighestStrongRoot() *node {
 	return strongRoot
 }
 
-// Newnode returns an initialized node value.
-// in-lined
-// func newNode(n uint) *node {
-// 	var u uint
-// 	labelCount = append(labelCount, u)
-// 	return &node{number: n}
-// }
-
 // (*node) createOutOfTree allocates arc's for adjacent nodes.
 func (n *node) createOutOfTree() {
 	n.outOfTree = make([]*arc, n.numAdjacent) // OK if '0' are allocated
@@ -308,7 +297,6 @@ func (n *node) processRoot() {
 		}
 	}
 
-	// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
 	n.addToStrongBucket(strongRoots[n.label])
 
 	if !PseudoCtx.LowestLabel {
@@ -369,8 +357,7 @@ func (n *node) pushExcess() {
 		if PseudoCtx.LowestLabel {
 			lowestStrongLabel = current.label
 		}
-		// CLB: note that strongRoots is []*root, so strongRoot[i] is *root.
-		current.addToStrongBucket(strongRoots[current.label]) //type *node does not support indexing was ns[current.label]
+		current.addToStrongBucket(strongRoots[current.label])
 	}
 }
 
@@ -418,7 +405,6 @@ func (n *node) findWeakNode() (*arc, *node) {
 		stats.NumArcScans++
 		if PseudoCtx.LowestLabel {
 			if n.outOfTree[i].to.label == lowestStrongLabel-1 {
-				//TODO CHECK SECTION
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.to
@@ -470,8 +456,9 @@ func (n *node) checkChildren() {
 	labelCount[n.label]--
 	n.label++
 	labelCount[n.label]++
-	// Always collect stats
-	stats.NumRelabels++
+
+	stats.NumRelabels++ // Always collect stats
+
 	n.nextArc = 0
 }
 
@@ -608,23 +595,12 @@ func (n *node) decompose(source uint, iteration *uint) {
 }
 
 // =================== the root object
+// allocations are in-line, as needed
 type root struct {
 	start *node
 	end   *node
 }
 
-// newRoot is a wrapper on new(root) to mimic source.
-// in-lined
-// func newRoot() *root {
-// 	return new(root)
-// }
-
-// free reinitializes a root value.
-// CLB: don't need in Go - only used as part of freeMemory in C source
-// func (r *root) free() {
-// 	r.start = nil
-// 	r.end = nil
-// }
 
 // ================ results
 
@@ -751,15 +727,12 @@ func ReadDimacsFile(fh *os.File) error {
 
 			var i uint
 			for i = 0; i < numNodes; i++ {
-				// in-lined: strongRoots[i] = newRoot()
 				strongRoots[i] = new(root)
-				// in-lined: adjacencyList[i] = &newNode(i + 1)
 				adjacencyList[i] = &node{number: i + 1}
 				var u uint
 				labelCount = append(labelCount, u)
 			}
 			for i = 0; i < numArcs; i++ {
-				// in-lined: arcList[i] = newArc()
 				arcList[i] = &arc{direction: 1}
 			}
 			first = 0
@@ -975,6 +948,7 @@ func RecoverFlow() {
 //	f 1 3 10
 //	...
 func Result(header string) []string {
+	// header and runtime config info
 	ret := []string{
 		"c " + header,
 		"c ",
