@@ -694,7 +694,7 @@ func checkOptimality() []string {
 // displayFlow (void)
 // C_source uses "a SRC DST FLOW" format; however, the examples we have,
 // e.g., http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm, use
-// "f SRC DST FLOW" format.  Here we use the latter, since we can 
+// "f SRC DST FLOW" format.  Here we use the latter, since we can
 // then use the examples as test cases.
 func displayFlow() []string {
 	var ret []string
@@ -960,7 +960,7 @@ func RecoverFlow() {
 //	c
 //	c Optimal flow using Hochbaum's PseudoFlow algorithm"
 //	c
-//	c Runtime Configuration: 
+//	c Runtime Configuration:
 //	c Lowest label pseudoflow algorithm
 //	c Using LIFO buckets
 //	c
@@ -1007,18 +1007,20 @@ func Result(header string) []string {
 
 // timing info in case someone wants it as in C source main()
 var timer = struct {
-	start, initialize, flow, recflow time.Time
+	start, readfile, initialize, flow, recflow time.Time
 }{}
 
-// TimerJSON return timings the 3 processing steps of Run.
+// TimerJSON return timings of the 4 processing steps of Run -
+// ReadDimacsFile, SimpleInitialization, FlowPhaseOne, and RecoverFlow.
 // Note: the file initialization and result marshaling times are not
 // included in result.
 func TimerJSON() string {
 	type times struct {
-		SimpleInitialization, FlowPhaseOne, RecoverFlow, Total time.Duration
+		ReadDimacsFile, SimpleInitialization, FlowPhaseOne, RecoverFlow, Total time.Duration
 	}
 	data := times{
-		timer.initialize.Sub(timer.start),
+		timer.readfile.Sub(timer.start),
+		timer.initialize.Sub(timer.readfile),
 		timer.flow.Sub(timer.initialize),
 		timer.recflow.Sub(timer.flow),
 		timer.recflow.Sub(timer.start),
@@ -1044,10 +1046,11 @@ func Run(input string) ([]string, error) {
 	defer fh.Close()
 
 	// implement C source main()
+	timer.start = time.Now()
 	if err = ReadDimacsFile(fh); err != nil {
 		return nil, err
 	}
-	timer.start = time.Now()
+	timer.readfile = time.Now()
 	SimpleInitialization()
 	timer.initialize = time.Now()
 	FlowPhaseOne()
