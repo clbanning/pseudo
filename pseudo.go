@@ -674,17 +674,17 @@ func checkOptimality() []string {
 		}
 	}
 	if check {
-		ret = append(ret, fmt.Sprintf("c\nc Solution checks as feasible.\n"))
+		ret = append(ret, "c ", "c Solution checks as feasible")
 	}
 
 	check = true
 	if excess[sink-1] != mincut {
 		check = false
-		ret = append(ret, fmt.Sprintf("c Flow is not optimal - max flow does not equal min cut"))
+		ret = append(ret, "c ", "c Flow is not optimal - max flow does not equal min cut")
 	}
 	if check {
-		ret = append(ret, fmt.Sprintf("c Solution checks as optimal"))
-		ret = append(ret, fmt.Sprintf("c Solution\ns %d\n", mincut))
+		ret = append(ret, "c ", "c Solution checks as optimal", "c Solution")
+		ret = append(ret, fmt.Sprintf("s %d\n", mincut))
 	}
 
 	return ret
@@ -963,6 +963,8 @@ func RecoverFlow() {
 //	c Runtime Configuration:
 //	c Lowest label pseudoflow algorithm
 //	c Using LIFO buckets
+//	c
+//	c Solution checks as feasible.
 //	c
 //	c Solution checks as optimal
 //	c Solution
