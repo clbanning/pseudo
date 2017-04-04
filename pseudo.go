@@ -692,12 +692,15 @@ func checkOptimality() []string {
 
 // static void
 // displayFlow (void)
+// C_source uses "a SRC DST FLOW" format; however, the examples we have,
+// e.g., http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm, use
+// "f SRC DST FLOW" format.  Here we use the latter, since we can 
+// then use the examples as test cases.
 func displayFlow() []string {
-	ret := []string{fmt.Sprintf("c\nc Flow values on each arc:\n")}
-
+	var ret []string
 	for i := uint(0); i < numArcs; i++ {
 		ret = append(ret,
-			fmt.Sprintf("a %d %d %d\n", arcList[i].from.number, arcList[i].to.number, arcList[i].flow))
+			fmt.Sprintf("f %d %d %d", arcList[i].from.number, arcList[i].to.number, arcList[i].flow))
 	}
 
 	return ret
