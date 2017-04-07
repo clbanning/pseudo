@@ -10,11 +10,11 @@
 // 4. main() in C source code is really just a test ... implement in pseudo_test.go.
 
 // Package pseudo is a port of pseudo3.23 from C to Go.
-// 
+//
 // The easiest way to use this package is to call pseudo.Run(<input file>) after setting
-// the runtime context options, if desired. However it is also possible to call the 
-// individual processing functions - ReadDimacsFile, SimpleInitialization, FlowPhaseOne, 
-// RecoverFlow, Results - sequentially. 
+// the runtime context options, if desired. However it is also possible to call the
+// individual processing functions - ReadDimacsFile, SimpleInitialization, FlowPhaseOne,
+// RecoverFlow, Results - sequentially.
 package pseudo
 
 import (
@@ -94,8 +94,8 @@ func (a *arc) pushUpward(child *node, parent *node, resCap uint) {
 	}
 
 	a.direction = 0
-	parent.excess += resCap // int and uint
-	child.excess -= resCap  // int and uint
+	parent.excess += resCap
+	child.excess -= resCap
 	a.flow = a.capacity
 	parent.outOfTree[parent.numberOutOfTree] = a
 	parent.numberOutOfTree++
@@ -150,7 +150,7 @@ type node struct {
 	childList       *node
 	nextScan        *node
 	numberOutOfTree uint
-	outOfTree       []*arc // was **Arc in C, looking at CreateOutOfTree, we're dealing with a pool of Arc's
+	outOfTree       []*arc // was **Arc in C, looking at createOutOfTree, we're dealing with a pool of Arc's
 	nextArc         uint
 	arcToParent     *arc
 	next            *node
@@ -600,7 +600,6 @@ type root struct {
 	start *node
 	end   *node
 }
-
 
 // ================ results
 
