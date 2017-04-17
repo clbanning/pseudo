@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -687,18 +688,19 @@ func displayFlow() []string {
 func ReadDimacsFile(fh *os.File) error {
 	var i, numLines, from, to, first, last uint
 	var capacity uint
-	var word []byte
-	var ch, ch1 byte
+	// var word string
+	var ch1 string
 
 	buf := bufio.NewReader(fh)
 	var atEOF bool
+	var n uint64
 	for {
 		if atEOF {
 			break
 		}
 
 		line, err := buf.ReadBytes('\n')
-		if err != io.EOF {
+		if err != nil && err != io.EOF {
 			return err
 		} else if err == io.EOF {
 			if len(line) == 0 {
@@ -713,11 +715,41 @@ func ReadDimacsFile(fh *os.File) error {
 		}
 		numLines++
 
+		/*
+		   cat dimacsMaxf.txt
+		   p max 6 8
+		   n 1 s
+		   n 6 t
+		   a 1 2 5
+		   a 1 3 15
+		   a 2 4 5
+		   a 2 5 5
+		   a 3 4 5
+		   a 3 5 5
+		   a 4 6 15
+		   a 5 6 5
+		*/
 		switch line[0] {
 		case 'p':
-			if _, err := fmt.Sscanf(string(line), "%v %s %d %d", &ch, word, &numNodes, &numArcs); err != nil {
+			// if _, err := fmt.Sscanf(string(line), "%v %s %d %d", &ch, &word, &numNodes, &numArcs); err != nil {
+			// if _, err := fmt.Sscan(string(line), &ch, &word, &numNodes, &numArcs); err != nil {
+			// 	return err
+			// }
+			vals := strings.Fields(string(line))
+			if len(vals) != 4 {
+				return fmt.Errorf("p entry doesn't have 3 values, has: %d", len(vals))
+			}
+			// word = vals[1] // TODO(clb): what do we do with 'word'?
+			n, err =  strconv.ParseUint(vals[2], 10, 64)
+			if err != nil {
 				return err
 			}
+			numNodes = uint(n)
+			n, err =  strconv.ParseUint(vals[3], 10, 64)
+			if err != nil {
+				return err
+			}
+			numArcs = uint(n)
 
 			adjacencyList = make([]*node, numNodes)
 			strongRoots = make([]*root, numNodes)
@@ -728,8 +760,6 @@ func ReadDimacsFile(fh *os.File) error {
 			for i = 0; i < numNodes; i++ {
 				strongRoots[i] = new(root)
 				adjacencyList[i] = &node{number: i + 1}
-				var u uint
-				labelCount = append(labelCount, u)
 			}
 			for i = 0; i < numArcs; i++ {
 				arcList[i] = &arc{direction: 1}
@@ -737,9 +767,29 @@ func ReadDimacsFile(fh *os.File) error {
 			first = 0
 			last = numArcs - 1
 		case 'a':
-			if _, err := fmt.Scanf(string(line), "%v %d %d %d", &ch, &from, &to, &capacity); err != nil {
+			// if _, err := fmt.Scanf(string(line), "%v %d %d %d", &ch, &from, &to, &capacity); err != nil {
+			// 	return err
+			// }
+			vals := strings.Fields(string(line))
+			if len(vals) != 4 {
+				return fmt.Errorf("a entry doesn't have 3 values, has: %d", len(vals))
+			}
+			n, err =  strconv.ParseUint(vals[2], 10, 64)
+			if err != nil {
 				return err
 			}
+			from = uint(n)
+			n, err =  strconv.ParseUint(vals[2], 10, 64)
+			if err != nil {
+				return err
+			}
+			to = uint(n)
+			n, err =  strconv.ParseUint(vals[3], 10, 64)
+			if err != nil {
+				return err
+			}
+			capacity = uint(n)
+
 			if (from+to)%2 != 0 {
 				arcList[first].from = adjacencyList[from-1]
 				arcList[first].to = adjacencyList[to-1]
@@ -755,12 +805,23 @@ func ReadDimacsFile(fh *os.File) error {
 			adjacencyList[from-1].numAdjacent++
 			adjacencyList[to-1].numAdjacent++
 		case 'n':
-			if _, err := fmt.Scanf(string(line), "%v  %d %v", &ch, &i, &ch1); err != nil {
+			// if _, err := fmt.Scanf(string(line), "%v  %d %v", &ch, &i, &ch1); err != nil {
+			// 	return err
+			// }
+			vals := strings.Fields(string(line))
+			if len(vals) != 3 {
+				return fmt.Errorf("n entry doesn't have 2 values, has: %d", len(vals))
+			}
+			n, err =  strconv.ParseUint(vals[1], 10, 64)
+			if err != nil {
 				return err
 			}
-			if ch1 == 's' {
+			i = uint(n)
+			ch1 = vals[2]
+
+			if ch1 == "s" {
 				source = i
-			} else if ch1 == 't' {
+			} else if ch1 == "t" {
 				sink = i
 			} else {
 				return fmt.Errorf("unrecognized character %v on line %d", ch1, numLines)
