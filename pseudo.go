@@ -688,7 +688,7 @@ func displayFlow() []string {
 func ReadDimacsFile(fh *os.File) error {
 	var i, numLines, from, to, first, last uint
 	var capacity uint
-	// var word string
+	// var word string // ????!!!!
 	var ch1 string
 
 	buf := bufio.NewReader(fh)
@@ -731,15 +731,11 @@ func ReadDimacsFile(fh *os.File) error {
 		*/
 		switch line[0] {
 		case 'p':
-			// if _, err := fmt.Sscanf(string(line), "%v %s %d %d", &ch, &word, &numNodes, &numArcs); err != nil {
-			// if _, err := fmt.Sscan(string(line), &ch, &word, &numNodes, &numArcs); err != nil {
-			// 	return err
-			// }
 			vals := strings.Fields(string(line))
 			if len(vals) != 4 {
 				return fmt.Errorf("p entry doesn't have 3 values, has: %d", len(vals))
 			}
-			// word = vals[1] // TODO(clb): what do we do with 'word'?
+			// word = vals[1] // TODO(clb): what do we do with 'word'?!!!!
 			n, err =  strconv.ParseUint(vals[2], 10, 64)
 			if err != nil {
 				return err
@@ -767,9 +763,6 @@ func ReadDimacsFile(fh *os.File) error {
 			first = 0
 			last = numArcs - 1
 		case 'a':
-			// if _, err := fmt.Scanf(string(line), "%v %d %d %d", &ch, &from, &to, &capacity); err != nil {
-			// 	return err
-			// }
 			vals := strings.Fields(string(line))
 			if len(vals) != 4 {
 				return fmt.Errorf("a entry doesn't have 3 values, has: %d", len(vals))
@@ -805,9 +798,6 @@ func ReadDimacsFile(fh *os.File) error {
 			adjacencyList[from-1].numAdjacent++
 			adjacencyList[to-1].numAdjacent++
 		case 'n':
-			// if _, err := fmt.Scanf(string(line), "%v  %d %v", &ch, &i, &ch1); err != nil {
-			// 	return err
-			// }
 			vals := strings.Fields(string(line))
 			if len(vals) != 3 {
 				return fmt.Errorf("n entry doesn't have 2 values, has: %d", len(vals))
@@ -824,7 +814,7 @@ func ReadDimacsFile(fh *os.File) error {
 			} else if ch1 == "t" {
 				sink = i
 			} else {
-				return fmt.Errorf("unrecognized character %v on line %d", ch1, numLines)
+				return fmt.Errorf("unrecognized character %s on line %d", ch1, numLines)
 			}
 		case '\n', 'c':
 			continue // catches blank lines and "comment" lines - blank lines not in spec.
