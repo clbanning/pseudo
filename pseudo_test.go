@@ -72,7 +72,7 @@ func TestReadDimacsFile(t *testing.T) {
 
 	// check arc record parsing
 	checkVals := []uint{5, 15, 5, 5, 5, 5, 15, 5}
-	for k, v := range arcList{
+	for k, v := range arcList {
 		if checkVals[k] != v.capacity {
 			fmt.Println(k, "- want:", checkVals[k], "got:", v.capacity)
 			t.Fatal()
@@ -80,15 +80,16 @@ func TestReadDimacsFile(t *testing.T) {
 	}
 }
 
-
 func TestRun(t *testing.T) {
-       PseudoCtx.LowestLabel = false
-       PseudoCtx.FifoBucket = true
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBucket = true
 
-       results, err := Run("_data/dimacsMaxf.txt")
-       if err != nil {
-              t.Fatal(err)
-       }
+	results, err := Run("_data/dimacsMaxf.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-       fmt.Printf("Results = %v", results)
+	for _, v := range results {
+		fmt.Println(v)
+	}
 }

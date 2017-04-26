@@ -659,7 +659,7 @@ func checkOptimality() []string {
 	}
 	if check {
 		ret = append(ret, "c ", "c Solution checks as optimal", "c Solution")
-		ret = append(ret, fmt.Sprintf("s %d\n", mincut))
+		ret = append(ret, fmt.Sprintf("s %d", mincut))
 	}
 
 	return ret
@@ -1018,7 +1018,6 @@ func Result(header string) []string {
 	} else {
 		ret = append(ret, "c Using LIFO buckets")
 	}
-	ret = append(ret, "c ")
 
 	// add Solution
 	ret = append(ret, checkOptimality()...)
