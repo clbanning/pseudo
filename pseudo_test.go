@@ -92,4 +92,6 @@ func TestRun(t *testing.T) {
 	for _, v := range results {
 		fmt.Println(v)
 	}
+
+	fmt.Println("\nstats:", StatsJSON())
 }
