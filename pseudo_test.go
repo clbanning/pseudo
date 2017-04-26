@@ -5,6 +5,7 @@ package pseudo
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 	// "time"
@@ -88,6 +89,12 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	fh,  _ := os.Open("_data/dimacsMaxf.txt")
+	defer fh.Close()
+	input, _ := ioutil.ReadAll(fh)
+	fmt.Println("input:")
+	fmt.Println(string(input))
 
 	for _, v := range results {
 		fmt.Println(v)

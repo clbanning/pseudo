@@ -59,6 +59,8 @@ func Config(file string) error {
 	if !ctxset {
 		return fmt.Errorf("no pseudo config object in %s", file)
 	}
+
+	InitGlobals()
 	return nil
 }
 */

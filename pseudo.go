@@ -37,6 +37,15 @@ var arcList []*arc
 var labelCount []uint
 var numNodes, numArcs, source, sink uint
 
+// InitGlobals - MUST be called after setting PseudoCtx members. 
+func InitGlobals() {
+	if PseudoCtx.LowestLabel {
+		lowestStrongLabel = 1
+	} else {
+		highestStrongLabel = 1
+	}
+}
+
 // local context
 
 // Context provides optional switches that can be set using Config.
@@ -265,39 +274,39 @@ func (n *node) addOutOfTreeNode(out *arc) {
 func (n *node) processRoot() {
 	var temp, weakNode *node
 	var out *arc
-	strongNode := n
-	n.nextScan = n.childList
+	strongRoot := n
+	strongRoot.nextScan = strongRoot.childList
 
-	if out, weakNode = n.findWeakNode(); out != nil {
-		weakNode.merge(n, out)
-		n.pushExcess()
+	if out, weakNode = strongRoot.findWeakNode(); out != nil {
+		weakNode.merge(strongRoot, out)
+		strongRoot.pushExcess()
 		return
 	}
 
-	n.checkChildren()
+	strongRoot.checkChildren()
 
-	for strongNode != nil {
-		for strongNode.nextScan != nil {
-			temp = strongNode.nextScan
-			strongNode.nextScan = strongNode.nextScan.next
-			strongNode = temp
-			strongNode.nextScan = strongNode.childList
+	for strongRoot != nil {
+		for strongRoot.nextScan != nil {
+			temp = strongRoot.nextScan
+			strongRoot.nextScan = strongRoot.nextScan.next
+			strongRoot = temp
+			strongRoot.nextScan = strongRoot.childList
 
-			if out, weakNode = strongNode.findWeakNode(); out != nil {
-				weakNode.merge(strongNode, out)
+			if out, weakNode = strongRoot.findWeakNode(); out != nil {
+				weakNode.merge(strongRoot, out)
 				n.pushExcess()
 				return
 			}
 
-			strongNode.checkChildren()
+			strongRoot.checkChildren()
 		}
 
-		if strongNode = strongNode.parent; strongNode != nil {
-			strongNode.checkChildren()
+		if strongRoot = strongRoot.parent; strongRoot != nil {
+			strongRoot.checkChildren()
 		}
 	}
 
-	n.addToStrongBucket(strongRoots[n.label])
+	strongRoot.addToStrongBucket(strongRoots[n.label])
 
 	if !PseudoCtx.LowestLabel {
 		highestStrongLabel++
@@ -735,12 +744,12 @@ func ReadDimacsFile(fh *os.File) error {
 				return fmt.Errorf("p entry doesn't have 3 values, has: %d", len(vals))
 			}
 			// word = vals[1] // TODO(clb): what do we do with 'word'?!!!!
-			n, err =  strconv.ParseUint(vals[2], 10, 64)
+			n, err = strconv.ParseUint(vals[2], 10, 64)
 			if err != nil {
 				return err
 			}
 			numNodes = uint(n)
-			n, err =  strconv.ParseUint(vals[3], 10, 64)
+			n, err = strconv.ParseUint(vals[3], 10, 64)
 			if err != nil {
 				return err
 			}
@@ -766,17 +775,17 @@ func ReadDimacsFile(fh *os.File) error {
 			if len(vals) != 4 {
 				return fmt.Errorf("a entry doesn't have 3 values, has: %d", len(vals))
 			}
-			n, err =  strconv.ParseUint(vals[2], 10, 64)
+			n, err = strconv.ParseUint(vals[2], 10, 64)
 			if err != nil {
 				return err
 			}
 			from = uint(n)
-			n, err =  strconv.ParseUint(vals[2], 10, 64)
+			n, err = strconv.ParseUint(vals[2], 10, 64)
 			if err != nil {
 				return err
 			}
 			to = uint(n)
-			n, err =  strconv.ParseUint(vals[3], 10, 64)
+			n, err = strconv.ParseUint(vals[3], 10, 64)
 			if err != nil {
 				return err
 			}
@@ -801,7 +810,7 @@ func ReadDimacsFile(fh *os.File) error {
 			if len(vals) != 3 {
 				return fmt.Errorf("n entry doesn't have 2 values, has: %d", len(vals))
 			}
-			n, err =  strconv.ParseUint(vals[1], 10, 64)
+			n, err = strconv.ParseUint(vals[1], 10, 64)
 			if err != nil {
 				return err
 			}
@@ -1068,6 +1077,9 @@ func Run(input string) ([]string, error) {
 		}
 	}
 	defer fh.Close()
+
+	// make sure to set globals
+	InitGlobals()
 
 	// implement C source main()
 	timer.start = time.Now()
