@@ -79,3 +79,16 @@ func TestReadDimacsFile(t *testing.T) {
 		}
 	}
 }
+
+
+func TestRun(t *testing.T) {
+       PseudoCtx.LowestLabel = false
+       PseudoCtx.FifoBucket = true
+
+       results, err := Run("_data/dimacsMaxf.txt")
+       if err != nil {
+              t.Fatal(err)
+       }
+
+       fmt.Printf("Results = %v", results)
+}

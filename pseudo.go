@@ -204,12 +204,11 @@ func getLowestStrongRoot() *node {
 // getHighestStrongRoot (void)
 func getHighestStrongRoot() *node {
 	var i uint
-	var strongRoot *node
+	strongRoot := &node{}
 
 	for i = highestStrongLabel; i > 0; i-- {
 		if strongRoots[i].start != nil {
 			highestStrongLabel = i
-
 			if labelCount[i-1] > 0 {
 				strongRoot = strongRoots[i].start
 				strongRoots[i].start = strongRoot.next
@@ -226,7 +225,7 @@ func getHighestStrongRoot() *node {
 		}
 	}
 
-	if strongRoots[0].start != nil {
+	if strongRoots[0].start == nil {
 		return nil
 	}
 
