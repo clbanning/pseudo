@@ -67,11 +67,11 @@ func ConfigJSON() string {
 
 // statistics
 type statistics struct {
-	NumPushes   uint `json:"numPushes"`
-	NumMergers  uint `json:"numMergers"`
-	NumRelabels uint `json:"numRelabels"`
-	NumGaps     uint `json:"numGaps"`
-	NumArcScans uint `json:"numArcScans"`
+	Pushes   uint `json:"pushes"`
+	Mergers  uint `json:"mergers"`
+	Relabels uint `json:"relabels"`
+	Gaps     uint `json:"gaps"`
+	ArcScans uint `json:"arcScans"`
 }
 
 var stats statistics
@@ -102,7 +102,7 @@ type arc struct {
 // pushUpward (Arc *currentArc, Node *child, Node *parent, const uint resCap)
 func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 	// fmt.Println("pushUpward - child.excess", child.excess, "parent.excess:", parent.excess)
-	stats.NumPushes++
+	stats.Pushes++
 	if resCap >= child.excess {
 		parent.excess += child.excess
 		a.flow += child.excess
@@ -131,7 +131,7 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 // pushDownward (Arc *currentArc, Node *child, Node *parent, uint flow)
 func (a *arc) pushDownward(child, parent *node, flow int) {
 	// fmt.Println("pushDownward - child.excess", child.excess, "parent.excess:", parent.excess)
-	stats.NumPushes++
+	stats.Pushes++
 
 	if flow >= child.excess {
 		parent.excess += child.excess
@@ -203,7 +203,7 @@ func getLowestStrongRoot() *node {
 
 			labelCount[0]--
 			labelCount[1]++
-			stats.NumRelabels++
+			stats.Relabels++
 
 			strongRoot.addToStrongBucket(strongRoots[strongRoot.label])
 		}
@@ -215,7 +215,7 @@ func getLowestStrongRoot() *node {
 			lowestStrongLabel = i
 
 			if labelCount[i-1] == 0 {
-				stats.NumGaps++
+				stats.Gaps++
 				return nil
 			}
 
@@ -252,7 +252,7 @@ func getHighestStrongRoot() *node {
 
 			// fmt.Println("\t[i].start:", strongRoots[i].start)
 			for strongRoots[i].start != nil {
-				stats.NumGaps++
+				stats.Gaps++
 				strongRoot = strongRoots[i].start
 				strongRoots[i].start = strongRoot.next
 				strongRoot.liftAll()
@@ -273,7 +273,7 @@ func getHighestStrongRoot() *node {
 
 		labelCount[0]--
 		labelCount[1]++
-		stats.NumRelabels++
+		stats.Relabels++
 
 		strongRoot.addToStrongBucket(strongRoots[strongRoot.label])
 	}
@@ -355,7 +355,7 @@ func (n *node) merge(child *node, newArc *arc) {
 	current := child
 	newParent := n
 
-	stats.NumMergers++ // unlike C source always calc stats
+	stats.Mergers++ // unlike C source always calc stats
 
 	// TODO(clb): current.arcToParent checked ??
 	for current != nil && current.arcToParent != nil {
@@ -461,7 +461,7 @@ func (n *node) findWeakNode() (*arc, *node) {
 	size = n.numberOutOfTree
 
 	for i = n.nextArc; i < size; i++ {
-		stats.NumArcScans++
+		stats.ArcScans++
 		if PseudoCtx.LowestLabel {
 			if n.outOfTree[i].to.label == lowestStrongLabel-1 {
 				n.nextArc = i
@@ -516,7 +516,7 @@ func (n *node) checkChildren() {
 	n.label++
 	labelCount[n.label]++
 
-	stats.NumRelabels++ // Always collect stats
+	stats.Relabels++ // Always collect stats
 
 	n.nextArc = 0
 }
