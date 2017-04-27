@@ -176,14 +176,18 @@ type node struct {
 
 // make sure everything gets allocated
 func newNode(number uint) *node {
+	parent := new(node)
+	childList := new(node)
+	nextScan := new(node)
+	next := new(node)
 	return &node{
-		arcToParent: &arc{},
-		childList:   &node{},
-		next:        &node{},
-		nextScan:    &node{},
-		number:      number,
-		outOfTree:   make([]*arc, int(numArcs)),
-		// parent:      &node{},
+		// arcToParent: &arc{},
+		parent:    parent,
+		childList: childList,
+		nextScan:  nextScan,
+		next:      next,
+		number:    number,
+		outOfTree: make([]*arc, int(numArcs)),
 	}
 }
 
@@ -263,6 +267,7 @@ func getHighestStrongRoot() *node {
 	// fmt.Println("highestStrongLabel:", highestStrongLabel)
 
 	if strongRoots[0].start == nil {
+		// fmt.Println("[0].start == nil")
 		return nil
 	}
 
@@ -298,48 +303,48 @@ func (n *node) addOutOfTreeNode(out *arc) {
 	n.numberOutOfTree++
 }
 
+// static void
+// processRoot (Node *strongRoot) 
 // (*node) processRoot. 'n' is 'strongRoot' in C source
 func (n *node) processRoot() {
 	// fmt.Println(" processRoot - num:", n.number, "label:", n.label, "excess:", n.excess)
 
 	var temp, weakNode *node
 	var out *arc
-	strongRoot := n
-	strongRoot.nextScan = strongRoot.childList
+	strongNode := n
+	n.nextScan = n.childList
 
-	if out, weakNode = strongRoot.findWeakNode(); out != nil {
-		weakNode.merge(strongRoot, out)
-		strongRoot.pushExcess()
+	if out, weakNode = n.findWeakNode(); out != nil {
+		// fmt.Printf("processRoot n: %T %v\n", n, n)
+		weakNode.merge(strongNode, out)
+		n.pushExcess()
 		return
 	}
 
-	strongRoot.checkChildren()
+	n.checkChildren()
 
-	for strongRoot != nil {
-		for strongRoot.nextScan != nil {
-			temp = strongRoot.nextScan
-			strongRoot.nextScan = strongRoot.nextScan.next
-			strongRoot = temp
-			strongRoot.nextScan = strongRoot.childList
+	for strongNode != nil {
+		for strongNode.nextScan != nil {
+			temp = strongNode.nextScan
+			strongNode.nextScan = strongNode.nextScan.next
+			strongNode = temp
+			strongNode.nextScan = strongNode.childList
 
-			if out, weakNode = strongRoot.findWeakNode(); out != nil {
-				weakNode.merge(strongRoot, out)
+			if out, weakNode = strongNode.findWeakNode(); out != nil {
+				weakNode.merge(strongNode, out)
 				n.pushExcess()
 				return
 			}
 
-			strongRoot.checkChildren()
+			strongNode.checkChildren()
 		}
 
-		if strongRoot = strongRoot.parent; strongRoot != nil {
-			strongRoot.checkChildren()
+		if strongNode = strongNode.parent; strongNode != nil {
+			strongNode.checkChildren()
 		}
 	}
 
-	// TODO(clb) check strongRoot ??
-	if strongRoot != nil {
-		strongRoot.addToStrongBucket(strongRoots[n.label])
-	}
+	n.addToStrongBucket(strongRoots[n.label])
 
 	if !PseudoCtx.LowestLabel {
 		highestStrongLabel++
@@ -350,6 +355,7 @@ func (n *node) processRoot() {
 // merge (Node *parent, Node *child, Arc *newArc)
 // (*node) merge. 'n' is 'parent' in C source.
 func (n *node) merge(child *node, newArc *arc) {
+	// fmt.Printf("merge, newArc: %T %v\n", newArc, newArc)
 	var oldArc *arc
 	var oldParent *node
 	current := child
@@ -358,10 +364,14 @@ func (n *node) merge(child *node, newArc *arc) {
 	stats.Mergers++ // unlike C source always calc stats
 
 	// TODO(clb): current.arcToParent checked ??
-	for current != nil && current.arcToParent != nil {
+	// for current != nil && current.arcToParent != nil {
+	// fmt.Printf("merge, current: %T %v\n", current, current)
+	// fmt.Printf("merge, current.arcToParent: %T %v\n", current.arcToParent, current.arcToParent)
+	for current.arcToParent != nil && current.parent != nil {
 		oldArc = current.arcToParent
 		current.arcToParent = newArc
 		oldParent = current.parent
+		// fmt.Printf("\toldArc: %v\n\tcurrent.arcToParent: %v\n\toldParent: %v\n", oldArc, current.arcToParent, oldParent)
 		oldParent.breakRelationship(current)
 		newParent.addRelationship(current)
 
@@ -371,11 +381,8 @@ func (n *node) merge(child *node, newArc *arc) {
 		newArc.direction = 1 - newArc.direction
 	}
 
-	// TODO(clb): check current ??
-	if current != nil {
-		current.arcToParent = newArc
-		newParent.addRelationship(current)
-	}
+	current.arcToParent = newArc
+	newParent.addRelationship(current)
 }
 
 // static void
@@ -387,8 +394,9 @@ func (n *node) pushExcess() {
 	prevEx := 1
 	// fmt.Println("num:", n.number, "label:", n.label, "excess:", n.excess, "parent:", n.parent)
 
-	// fmt.Printf("n %T %v |current %T %v\n", n, n, current, current)
-	for current = n; current.excess > 0 && current.parent != nil; current = parent {
+	// fmt.Printf("pushExcess: n %T %v\n", n, n)
+	for current = n; current.excess > 0 && current.parent != nil && current.arcToParent != nil; current = parent {
+		// fmt.Printf("\ncurrent %T %v\n", current, current)
 		parent = current.parent
 		prevEx = parent.excess
 
@@ -441,9 +449,9 @@ func (n *node) breakRelationship(child *node) {
 // CLB: implement as static void function, calling code ignores return value
 func (n *node) addRelationship(child *node) {
 	// TODO(clb): this shouldn't be happening
-	if n == nil {
-		return
-	}
+	// if n == nil {
+	// 	return
+	// }
 	child.parent = n
 	child.next = n.childList
 	n.childList = child
@@ -460,45 +468,55 @@ func (n *node) findWeakNode() (*arc, *node) {
 
 	size = n.numberOutOfTree
 
+	// fmt.Printf("findWeakNode, size: %d - n: %T %v\n", size, n, n)
 	for i = n.nextArc; i < size; i++ {
 		stats.ArcScans++
 		if PseudoCtx.LowestLabel {
+			// fmt.Printf("\t1, n.outOfTree[i].to.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].to.label, lowestStrongLabel-1)
 			if n.outOfTree[i].to.label == lowestStrongLabel-1 {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.to
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
+				// fmt.Printf("\t1, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
+			// fmt.Printf("\t2, n.outOfTree[i].from.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].from.label, lowestStrongLabel-1)
 			if n.outOfTree[i].from.label == (lowestStrongLabel - 1) {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.from
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
+				// fmt.Printf("\t2, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
 		} else {
+			// fmt.Printf("\t3, n.outOfTree[i].to.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].to.label, highestStrongLabel-1)
 			if n.outOfTree[i].to.label == (highestStrongLabel - 1) {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.to
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
+				// fmt.Printf("\t3, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
+			// fmt.Printf("\t4, n.outOfTree[i].from.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].from.label, highestStrongLabel-1)
 			if n.outOfTree[i].from.label == (highestStrongLabel - 1) {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.from
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
+				// fmt.Printf("\t4, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
 		}
 	}
 
+	// fmt.Println("\t5. n.nextArc:", n.nextArc, "n.numberOutOfTree:", n.numberOutOfTree)
 	n.nextArc = n.numberOutOfTree
 	return nil, nil
 
@@ -822,8 +840,8 @@ func ReadDimacsFile(fh *os.File) error {
 
 			var i uint
 			for i = 0; i < numNodes; i++ {
-				strongRoots[i] = &root{}   // newRoot()
-				adjacencyList[i] = newNode(uint(i+1))
+				strongRoots[i] = &root{} // newRoot()
+				adjacencyList[i] = newNode(uint(i + 1))
 			}
 			for i = 0; i < numArcs; i++ {
 				arcList[i] = &arc{direction: 1} // newArc(1)
