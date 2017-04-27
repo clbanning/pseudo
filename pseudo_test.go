@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"testing"
 	// "time"
 )
@@ -72,10 +73,14 @@ func TestReadDimacsFile(t *testing.T) {
 	}
 
 	// check arc record parsing
-	checkVals := []uint{5, 15, 5, 5, 5, 5, 15, 5}
+	checkVals := map[string]int{ "1_2":5, "1_3":15, "2_4":5, "2_5":5, "3_4":5, "3_5":5, "4_6":15, "5_6":5}
 	for k, v := range arcList {
-		if checkVals[k] != v.capacity {
-			fmt.Println(k, "- want:", checkVals[k], "got:", v.capacity)
+		ck := strconv.Itoa(int(v.from.number))+"_"+strconv.Itoa(int(v.to.number))
+		if vcap, ok := checkVals[ck]; !ok {
+			fmt.Println("unknown ck:", ck)
+			t.Fatal()
+		} else if vcap != v.capacity {
+			fmt.Println(k, "- want:", checkVals[ck], "got:", v.capacity)
 			t.Fatal()
 		}
 	}
@@ -90,7 +95,7 @@ func TestRun(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fh,  _ := os.Open("_data/dimacsMaxf.txt")
+	fh, _ := os.Open("_data/dimacsMaxf.txt")
 	defer fh.Close()
 	input, _ := ioutil.ReadAll(fh)
 	fmt.Println("input:")
