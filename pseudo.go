@@ -304,7 +304,7 @@ func (n *node) addOutOfTreeNode(out *arc) {
 }
 
 // static void
-// processRoot (Node *strongRoot) 
+// processRoot (Node *strongRoot)
 // (*node) processRoot. 'n' is 'strongRoot' in C source
 func (n *node) processRoot() {
 	// fmt.Println(" processRoot - num:", n.number, "label:", n.label, "excess:", n.excess)
@@ -774,7 +774,6 @@ func displayFlow() []string {
 func ReadDimacsFile(fh *os.File) error {
 	var i, numLines, from, to, first, last uint
 	var capacity int
-	// var word string // ????!!!!
 	var ch1 string
 
 	buf := bufio.NewReader(fh)
@@ -821,7 +820,6 @@ func ReadDimacsFile(fh *os.File) error {
 			if len(vals) != 4 {
 				return fmt.Errorf("p entry doesn't have 3 values, has: %d", len(vals))
 			}
-			// word = vals[1] // TODO(clb): what do we do with 'word'?!!!!
 			n, err = strconv.ParseUint(vals[2], 10, 64)
 			if err != nil {
 				return err
@@ -1219,10 +1217,22 @@ func Run(input string) ([]string, error) {
 		return nil, err
 	}
 	timer.readfile = time.Now()
+	fmt.Println("----- ReadDimacsFile -----")
+	printArcList()
+	printAdjacencyList()
+	printStrongRoots()
 	SimpleInitialization()
 	timer.initialize = time.Now()
+	fmt.Println("----- SimpleInitialization -----")
+	printArcList()
+	printAdjacencyList()
+	printStrongRoots()
 	FlowPhaseOne()
 	timer.flow = time.Now()
+	fmt.Println("----- FlowPhaseOne -----")
+	printArcList()
+	printAdjacencyList()
+	printStrongRoots()
 	RecoverFlow()
 	timer.recflow = time.Now()
 	ret := Result("Data: " + input)
@@ -1305,5 +1315,57 @@ func quickSort(arr []*arc, first, last uint) {
 	}
 	if left+1 < last {
 		quickSort(arr, left+1, last)
+	}
+}
+
+// ========================== debugging the logic ==============
+
+func printArcList() {
+	fmt.Println("n from to flow capacity direction")
+	for n, v := range arcList {
+		fmt.Printf("%d: %v %v %v %v %v\n", n, v.from.number, v.to.number, v.flow, v.capacity, v.direction)
+	}
+}
+
+func printAdjacencyList() {
+	var childList, next, nextScan, parent int
+	fmt.Println("n childList.num excess label next.num nextArc nextScan.num numAdj num numOutOfTree parent.num")
+	for n, v := range adjacencyList {
+		if v.childList != nil {
+			childList = int(v.childList.number)
+		} else {
+			childList = -1
+		}
+		if v.next != nil {
+			next = int(v.next.number)
+		} else {
+			next = -1
+		}
+		if v.nextScan != nil {
+			nextScan = int(v.nextScan.number)
+		} else {
+			nextScan = -1
+		}
+		if v.parent != nil {
+			parent = int(v.parent.number)
+		} else {
+			parent = -1
+		}
+		fmt.Printf("%d: %v %v %v %v %v %v %v %v %v %v\n", n, childList, v.excess, v.label, next, v.nextArc, nextScan, v.numAdjacent, v.number, v.numberOutOfTree, parent)
+	}
+}
+
+func printStrongRoots() {
+	fmt.Println("n: start end")
+	for n, v := range strongRoots {
+		if v.start == nil && v.end == nil {
+			fmt.Printf("%d: <nil> <nil>\n", n)
+		} else if v.start == nil {
+			fmt.Printf("%d: <nil> %d\n", n, v.end.number)
+		} else if v.end == nil {
+			fmt.Printf("%d: %d <nil>\n", n, v.start.number)
+		} else {
+			fmt.Printf("%d: %d %d\n", n, v.start.number, v.end.number)
+		}
 	}
 }

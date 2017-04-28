@@ -88,7 +88,7 @@ func TestReadDimacsFile(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	PseudoCtx.LowestLabel = false
-	PseudoCtx.FifoBucket = true
+	PseudoCtx.FifoBucket = false
 
 	results, err := Run("_data/dimacsMaxf.txt")
 	if err != nil {
