@@ -55,8 +55,10 @@ typedef struct root
 // ------------- dump functions --------------
 static void printArc(Arc *);
 static void printNode(Node *);
+static void printStrongRoot(uint);
 static void printArcList(void);
 static void printAdjacencyList(void);
+static void printStrongRoots(void);
 
 //---------------  Global variables ------------------
 static uint numNodes = 0;
@@ -424,6 +426,7 @@ simpleInitialization (void)
 			++ labelCount[1];
 
 			addToStrongBucket (&adjacencyList[i], &strongRoots[1]);
+			// printStrongRoot((uint)1);
 		}
 	}
 
@@ -467,6 +470,11 @@ merge (Node *parent, Node *child, Arc *newArc)
 {
 	Arc *oldArc;
 	Node *current = child, *oldParent, *newParent = parent;
+
+	// printf("\t** merge **\n");
+	// printNode(newParent);
+	// printNode(current);
+	// printArc(newArc);
 
 #ifdef STATS
 	++ numMergers;
@@ -518,6 +526,7 @@ pushUpward (Arc *currentArc, Node *child, Node *parent, const uint resCap)
 #endif
 
 	addToStrongBucket (child, &strongRoots[child->label]);
+	// printStrongRoot(child->label);
 }
 
 
@@ -527,6 +536,12 @@ pushDownward (Arc *currentArc, Node *child, Node *parent, uint flow)
 #ifdef STATS
 	++ numPushes;
 #endif
+
+	// printf("\tpushDownward -\n");
+	// printArc(currentArc);
+	// printNode(child);
+	// printNode(parent);
+	// printf("\tflow: %d\n", flow);
 
 	if (flow >= child->excess) 
 	{
@@ -549,6 +564,7 @@ pushDownward (Arc *currentArc, Node *child, Node *parent, uint flow)
 #endif
 
 	addToStrongBucket (child, &strongRoots[child->label]);
+	// printStrongRoot(child->label);
 }
 
 static void
@@ -565,14 +581,20 @@ pushExcess (Node *strongRoot)
 		
 		arcToParent = current->arcToParent;
 
+		// printf("\tarcToParent->direction: %d\n", arcToParent->direction);
 		if (arcToParent->direction)
 		{
+			// printf("\tpushUpward\n");
 			pushUpward (arcToParent, current, parent, (arcToParent->capacity - arcToParent->flow)); 
 		}
 		else
 		{
+			// printf("\tpushDownward\n");
 			pushDownward (arcToParent, current, parent, arcToParent->flow); 
 		}
+		// printArc(arcToParent);
+		// printNode(current);
+		// printNode(parent);
 	}
 
 	if ((current->excess > 0) && (prevEx <= 0))
@@ -582,6 +604,7 @@ pushExcess (Node *strongRoot)
 		lowestStrongLabel = current->label;
 #endif
 			addToStrongBucket (current, &strongRoots[current->label]);
+			// printStrongRoot(current->label);
 	}
 }
 
@@ -677,6 +700,9 @@ processRoot (Node *strongRoot)
 	
 	while (strongNode)
 	{
+		// printf("processRoot, strongNode:\n");
+		// printNode(strongNode);
+
 		while (strongNode->nextScan) 
 		{
 			temp = strongNode->nextScan;
@@ -686,21 +712,33 @@ processRoot (Node *strongRoot)
 
 			if ((out = findWeakNode (strongNode, &weakNode)))
 			{
+				// printArc(out);
+				// printNode(weakNode);
+
 				merge (weakNode, strongNode, out);
+				// printNode(weakNode);
+				// printNode(strongNode);
+				// printArc(out);
+
 				pushExcess (strongRoot);
+				// printNode(strongRoot);
+
 				return;
 			}
 
 			checkChildren (strongNode);
+			// printNode(strongNode);
 		}
 
 		if ((strongNode = strongNode->parent))
 		{
 			checkChildren (strongNode);
+			// printNode(strongNode);
 		}
 	}
 
 	addToStrongBucket (strongRoot, &strongRoots[strongRoot->label]);
+	// printStrongRoot(strongRoot->label);
 
 #ifndef LOWEST_LABEL
 	++ highestStrongLabel;
@@ -732,6 +770,7 @@ getLowestStrongRoot (void)
 			++ labelCount[1];
 	
 			addToStrongBucket (strongRoot, &strongRoots[strongRoot->label]);		
+			// printStrongRoot(strongRoot->label);
 		}	
 		lowestStrongLabel = 1;
 	}
@@ -813,6 +852,7 @@ getHighestStrongRoot (void)
 #endif
 
 		addToStrongBucket (strongRoot, &strongRoots[strongRoot->label]);		
+		// printStrongRoot(strongRoot->label);
 	}	
 
 	highestStrongLabel = 1;
@@ -1124,13 +1164,18 @@ decompose (Node *excessNode, const uint source, uint *iteration)
 static void
 recoverFlow (const uint gap)
 {
+	printf("*** recoverFlow ***\ngap: %d\n", gap);
+
 	uint i, j, iteration = 1;
 	Arc *tempArc;
 	Node *tempNode;
 
+	printf("\t--- sink:\n");
 	for (i=0; i<adjacencyList[sink-1].numOutOfTree; ++i) 
 	{
 		tempArc = adjacencyList[sink-1].outOfTree[i];
+		printArc(tempArc);
+		printNode(tempArc->from);
 		if (tempArc->from->excess < 0) 
 		{
 			if ((tempArc->from->excess + (int) tempArc->flow)  < 0)
@@ -1144,12 +1189,19 @@ recoverFlow (const uint gap)
 				tempArc->from->excess = 0;
 			}
 		}	
+		printArc(tempArc);
+		printNode(tempArc->from);
 	}
 
+	printf("\t--- source:\n");
 	for (i=0; i<adjacencyList[source-1].numOutOfTree; ++i) 
 	{
 		tempArc = adjacencyList[source-1].outOfTree[i];
+		printArc(tempArc);
+		printNode(tempArc->to);
 		addOutOfTreeNode (tempArc->to, tempArc);
+		printArc(tempArc);
+		printNode(tempArc->to);
 	}
 
 	adjacencyList[source-1].excess = 0;
@@ -1342,6 +1394,23 @@ printAdjacencyList(void)
 }
 	
 static void
+printStrongRoot(uint n)
+{
+	if ((strongRoots[n].start == NULL) && (strongRoots[n].end == NULL)) {
+		printf("%d: NULL NULL\n", n);
+	} else if ((strongRoots[n].start == NULL) && (strongRoots[n].end)) { 
+		printf("%d: NULL %d\n", n, strongRoots[n].end->number);
+	} else if ((strongRoots[n].end == NULL) && (strongRoots[n].start)) {
+		printf("%d: %d NULL\n", n, strongRoots[n].start->number);
+	} else {
+		printf("%d: %d %d\n", 
+			n, 
+			strongRoots[n].start->number, 
+			strongRoots[n].end->number);	
+	}
+}
+
+static void
 printStrongRoots(void)
 {
 	int i;
@@ -1395,6 +1464,11 @@ main(int argc, char ** argv)
 	simpleInitialization ();
 	initEnd=timer ();
 
+	printf("===== simpleInitialization ====\n");
+	printArcList();
+	printAdjacencyList();
+	printStrongRoots();
+
 #ifdef PROGRESS
 	printf ("c Finished initialization.\n"); fflush (stdout);
 #endif
@@ -1402,6 +1476,12 @@ main(int argc, char ** argv)
 	solveStart=initEnd;
 	pseudoflowPhase1 ();
 	solveEnd=timer ();
+
+	printf("===== pseudoflowPhase1 ====\n");
+	printArcList();
+	printAdjacencyList();
+	printStrongRoots();
+
 
 #ifdef PROGRESS
 	printf ("c Finished phase 1.\n"); fflush (stdout);
@@ -1415,6 +1495,12 @@ main(int argc, char ** argv)
 
 	flowStart = solveEnd;
 	recoverFlow(gap);
+
+	printf("===== recoverFlow ====\n");
+	printArcList();
+	printAdjacencyList();
+	printStrongRoots();
+
 	flowEnd=timer ();
 
 	printf ("c Number of nodes     : %d\n", numNodes);
@@ -1432,6 +1518,10 @@ main(int argc, char ** argv)
 #endif
 	checkOptimality (gap);
 
+	printf("===== checkOptimality  ====\n");
+	printArcList();
+	printAdjacencyList();
+	printStrongRoots();
 #ifdef DISPLAY_CUT
 	displayCut (gap);
 #endif
