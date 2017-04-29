@@ -52,6 +52,12 @@ typedef struct root
 	Node *end;
 } Root;
 
+// ------------- dump functions --------------
+static void printArc(Arc *);
+static void printNode(Node *);
+static void printArcList(void);
+static void printAdjacencyList(void);
+
 //---------------  Global variables ------------------
 static uint numNodes = 0;
 static uint numArcs = 0;
@@ -96,7 +102,7 @@ displayCut (const uint gap)
 }
 #endif
 
-#ifdef DISPLAY_FLOW
+// #ifdef DISPLAY_FLOW
 static void
 displayFlow (void) 
 {
@@ -109,7 +115,7 @@ displayFlow (void)
 		printf("a %d %d %d\n", arcList[i].from->number, arcList[i].to->number, arcList[i].flow);
 	}
 }
-#endif
+// #endif
 
 static void
 initializeNode (Node *nd, const uint n)
@@ -830,7 +836,7 @@ pseudoflowPhase1 (void)
 #else
 	while ((strongRoot = getHighestStrongRoot ()))  
 #endif
-	{ 
+	{ 	
 		processRoot (strongRoot);
 	}
 }
@@ -861,7 +867,7 @@ checkOptimality (const uint gap)
 			mincut += arcList[i].capacity;
 		}
 
-		if ((arcList[i].flow > arcList[i].capacity) || (arcList[i].flow < 0)) 
+		if ((arcList[i].flow > arcList[i].capacity) || ((int)arcList[i].flow < 0)) 
 		{
 			check = 0;
 			printf("c Capacity constraint violated on arc (%d, %d). Flow = %d, capacity = %d\n", 
@@ -1219,6 +1225,21 @@ freeMemory (void)
 	free (arcList);
 }
 
+static void
+printArc(Arc *a)
+{
+	if (a != NULL) {
+		printf("\t%d %d %d %d %d\n", 
+			a->from->number,
+			a->to->number,
+			a->flow,
+			a->capacity,
+			a->direction);
+	} else {
+		printf("NULL");
+	}
+}
+
 static void 
 printArcList(void)
 {
@@ -1236,25 +1257,87 @@ printArcList(void)
 	}
 }
 	
+static void
+printNode(Node *n)
+{
+	int childlist, next, nextScan, parent;
+	if (n != NULL) {
+		if (n->childList != NULL) {
+			childlist = n->childList->number;
+		} else {
+			childlist = -1;
+		}
+		if (n->next != NULL) {
+			next = n->next->number;
+		} else {
+			next = -1;
+		}
+		if (n->nextScan != NULL) {
+			nextScan = n->nextScan->number;
+		} else {
+			nextScan = -1;
+		}
+		if (n->parent != NULL) {
+			parent = n->parent->number;
+		} else {
+			parent = -1;
+		}
+		printf("\t%d %d %d %d %d %d %d %d %d %d\n", 
+			childlist,
+			n->excess,
+			n->label,
+			next,
+			n->nextArc,
+			nextScan,
+			n->numAdjacent,
+			n->number,
+			n->numOutOfTree,
+			parent);
+	} else {
+		printf("NULL");
+	}
+}
+
 static void 
-printAdjacenyList(void)
+printAdjacencyList(void)
 {
 	int i;
+	int childlist, next, nextScan, parent;
 	printf("i: childList.num excess label next.num nextArc nextScan.num numAdj num numOutOfTree parent.num\n");
 	for (i=0; i < numNodes; i++)
 	{
+		if (adjacencyList[i].childList != NULL) {
+			childlist = adjacencyList[i].childList->number;
+		} else {
+			childlist = -1;
+		}
+		if (adjacencyList[i].next != NULL) {
+			next = adjacencyList[i].next->number;
+		} else {
+			next = -1;
+		}
+		if (adjacencyList[i].nextScan != NULL) {
+			nextScan = adjacencyList[i].nextScan->number;
+		} else {
+			nextScan = -1;
+		}
+		if (adjacencyList[i].parent != NULL) {
+			parent = adjacencyList[i].parent->number;
+		} else {
+			parent = -1;
+		}
 		printf("%d: %d %d %d %d %d %d %d %d %d %d\n", 
 			i,
-			-1, // adjacencyList[i].childList->number,
+			childlist,
 			adjacencyList[i].excess,
 			adjacencyList[i].label,
-			-1, // adjacencyList[i].next->number,
+			next,
 			adjacencyList[i].nextArc,
-			-1, // adjacencyList[i].nextScan->number,
+			nextScan,
 			adjacencyList[i].numAdjacent,
 			adjacencyList[i].number,
 			adjacencyList[i].numOutOfTree,
-			-1); // adjacencyList[i].parent->number);
+			parent);
 	}
 }
 	
@@ -1280,35 +1363,6 @@ printStrongRoots(void)
 	}
 }
 
-
-/*
-typedef struct arc 
-{
-	struct node *from;
-	struct node *to;
-	uint flow;
-	uint capacity;
-	uint direction;
-} Arc;
-static void
-initializeNode (Node *nd, const uint n)
-{
-	nd->label = 0;
-	nd->excess = 0;
-	nd->parent = NULL;
-	nd->childList = NULL;
-	nd->nextScan = NULL;
-	nd->nextArc = 0;
-	nd->numOutOfTree = 0;
-	nd->arcToParent = NULL;
-	nd->next = NULL;
-	nd->visited = 0;
-	nd->numAdjacent = 0;
-	nd->number = n;
-	nd->outOfTree = NULL;
-}
-*/
-
 int 
 main(int argc, char ** argv) 
 {
@@ -1333,11 +1387,6 @@ main(int argc, char ** argv)
 	readDimacsFileCreateList ();
 	readEnd=timer ();
 
-	printf("----- readDimacsFileCreateList -----\n");
-	printArcList();
-	printAdjacenyList();
-	printStrongRoots();
-
 #ifdef PROGRESS
 	printf ("c Finished reading file.\n"); fflush (stdout);
 #endif
@@ -1346,11 +1395,6 @@ main(int argc, char ** argv)
 	simpleInitialization ();
 	initEnd=timer ();
 
-	printf("----- simpleInitialization -----\n");
-	printArcList();
-	printAdjacenyList();
-	printStrongRoots();
-
 #ifdef PROGRESS
 	printf ("c Finished initialization.\n"); fflush (stdout);
 #endif
@@ -1358,11 +1402,6 @@ main(int argc, char ** argv)
 	solveStart=initEnd;
 	pseudoflowPhase1 ();
 	solveEnd=timer ();
-
-	printf("----- pseudoFlowPhaseOne -----\n");
-	printArcList();
-	printAdjacenyList();
-	printStrongRoots();
 
 #ifdef PROGRESS
 	printf ("c Finished phase 1.\n"); fflush (stdout);
@@ -1377,11 +1416,6 @@ main(int argc, char ** argv)
 	flowStart = solveEnd;
 	recoverFlow(gap);
 	flowEnd=timer ();
-
-	printf("----- recoverFlow -----\n");
-	printArcList();
-	printAdjacenyList();
-	printStrongRoots();
 
 	printf ("c Number of nodes     : %d\n", numNodes);
 	printf ("c Number of arcs      : %d\n", numArcs);
@@ -1402,9 +1436,9 @@ main(int argc, char ** argv)
 	displayCut (gap);
 #endif
 
-#ifdef DISPLAY_FLOW
+// #ifdef DISPLAY_FLOW
 	displayFlow ();
-#endif
+// #endif
 
 	freeMemory ();
 

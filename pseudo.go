@@ -101,7 +101,6 @@ type arc struct {
 // static inline void
 // pushUpward (Arc *currentArc, Node *child, Node *parent, const uint resCap)
 func (a *arc) pushUpward(child *node, parent *node, resCap int) {
-	// fmt.Println("pushUpward - child.excess", child.excess, "parent.excess:", parent.excess)
 	stats.Pushes++
 	if resCap >= child.excess {
 		parent.excess += child.excess
@@ -109,12 +108,10 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 		child.excess = 0
 		return
 	}
-	// fmt.Println("\t child.excess", child.excess, "parent.excess:", parent.excess)
 
 	a.direction = 0
 	parent.excess += resCap
 	child.excess -= resCap
-	// fmt.Println("\t child.excess", child.excess, "parent.excess:", parent.excess)
 	a.flow = a.capacity
 	parent.outOfTree[parent.numberOutOfTree] = a
 	parent.numberOutOfTree++
@@ -130,7 +127,6 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 //static inline void
 // pushDownward (Arc *currentArc, Node *child, Node *parent, uint flow)
 func (a *arc) pushDownward(child, parent *node, flow int) {
-	// fmt.Println("pushDownward - child.excess", child.excess, "parent.excess:", parent.excess)
 	stats.Pushes++
 
 	if flow >= child.excess {
@@ -138,14 +134,10 @@ func (a *arc) pushDownward(child, parent *node, flow int) {
 		a.flow = child.excess
 		child.excess = 0
 	}
-	// fmt.Println("\t child.excess", child.excess, "parent.excess:", parent.excess)
 
-	// fmt.Printf("child %T %v \n", child, child)
-	// fmt.Printf("parent %T %v \n", parent, parent)
 	a.direction = 1
 	child.excess -= flow
 	parent.excess += flow
-	// fmt.Println("\t child.excess", child.excess, "parent.excess:", parent.excess)
 	a.flow = 0
 	parent.outOfTree[parent.numberOutOfTree] = a
 	parent.numberOutOfTree++
@@ -176,16 +168,7 @@ type node struct {
 
 // make sure everything gets allocated
 func newNode(number uint) *node {
-	parent := new(node)
-	childList := new(node)
-	nextScan := new(node)
-	next := new(node)
 	return &node{
-		// arcToParent: &arc{},
-		parent:    parent,
-		childList: childList,
-		nextScan:  nextScan,
-		next:      next,
 		number:    number,
 		outOfTree: make([]*arc, int(numArcs)),
 	}
@@ -240,13 +223,10 @@ func getHighestStrongRoot() *node {
 	var i uint
 	strongRoot := newNode(0)
 
-	// fmt.Println("highestStrongLabel:", highestStrongLabel)
 	for i = highestStrongLabel; i > 0; i-- {
-		// fmt.Println("\t[i].start:", strongRoots[i].start)
 
 		if strongRoots[i].start != nil {
 			highestStrongLabel = i
-			// fmt.Println("\tlabelCount[i-1]:", labelCount[i-1])
 			if labelCount[i-1] > 0 {
 				strongRoot = strongRoots[i].start
 				strongRoots[i].start = strongRoot.next
@@ -254,20 +234,16 @@ func getHighestStrongRoot() *node {
 				return strongRoot
 			}
 
-			// fmt.Println("\t[i].start:", strongRoots[i].start)
 			for strongRoots[i].start != nil {
 				stats.Gaps++
 				strongRoot = strongRoots[i].start
 				strongRoots[i].start = strongRoot.next
 				strongRoot.liftAll()
-				// fmt.Println("\t[i].start:", strongRoots[i].start)
 			}
 		}
 	}
-	// fmt.Println("highestStrongLabel:", highestStrongLabel)
 
 	if strongRoots[0].start == nil {
-		// fmt.Println("[0].start == nil")
 		return nil
 	}
 
@@ -307,7 +283,6 @@ func (n *node) addOutOfTreeNode(out *arc) {
 // processRoot (Node *strongRoot)
 // (*node) processRoot. 'n' is 'strongRoot' in C source
 func (n *node) processRoot() {
-	// fmt.Println(" processRoot - num:", n.number, "label:", n.label, "excess:", n.excess)
 
 	var temp, weakNode *node
 	var out *arc
@@ -315,7 +290,6 @@ func (n *node) processRoot() {
 	n.nextScan = n.childList
 
 	if out, weakNode = n.findWeakNode(); out != nil {
-		// fmt.Printf("processRoot n: %T %v\n", n, n)
 		weakNode.merge(strongNode, out)
 		n.pushExcess()
 		return
@@ -355,7 +329,6 @@ func (n *node) processRoot() {
 // merge (Node *parent, Node *child, Arc *newArc)
 // (*node) merge. 'n' is 'parent' in C source.
 func (n *node) merge(child *node, newArc *arc) {
-	// fmt.Printf("merge, newArc: %T %v\n", newArc, newArc)
 	var oldArc *arc
 	var oldParent *node
 	current := child
@@ -363,15 +336,10 @@ func (n *node) merge(child *node, newArc *arc) {
 
 	stats.Mergers++ // unlike C source always calc stats
 
-	// TODO(clb): current.arcToParent checked ??
-	// for current != nil && current.arcToParent != nil {
-	// fmt.Printf("merge, current: %T %v\n", current, current)
-	// fmt.Printf("merge, current.arcToParent: %T %v\n", current.arcToParent, current.arcToParent)
 	for current.arcToParent != nil && current.parent != nil {
 		oldArc = current.arcToParent
 		current.arcToParent = newArc
 		oldParent = current.parent
-		// fmt.Printf("\toldArc: %v\n\tcurrent.arcToParent: %v\n\toldParent: %v\n", oldArc, current.arcToParent, oldParent)
 		oldParent.breakRelationship(current)
 		newParent.addRelationship(current)
 
@@ -392,16 +360,12 @@ func (n *node) pushExcess() {
 	var current, parent *node
 	var arcToParent *arc
 	prevEx := 1
-	// fmt.Println("num:", n.number, "label:", n.label, "excess:", n.excess, "parent:", n.parent)
 
-	// fmt.Printf("pushExcess: n %T %v\n", n, n)
 	for current = n; current.excess > 0 && current.parent != nil && current.arcToParent != nil; current = parent {
-		// fmt.Printf("\ncurrent %T %v\n", current, current)
 		parent = current.parent
 		prevEx = parent.excess
 
 		arcToParent = current.arcToParent
-		// fmt.Printf("arcToParent %T %v \n", arcToParent, arcToParent)
 
 		if arcToParent.direction > 0 {
 			arcToParent.pushUpward(current, parent, int(arcToParent.capacity-arcToParent.flow))
@@ -436,7 +400,6 @@ func (n *node) breakRelationship(child *node) {
 		return
 	}
 
-	// fmt.Printf("n %T %v |current %T %v\n", n, n, current, current)
 	for current = n.childList; current != nil && current.next != child; current = current.next {
 		current.next = child.next
 		child.next = nil
@@ -468,55 +431,45 @@ func (n *node) findWeakNode() (*arc, *node) {
 
 	size = n.numberOutOfTree
 
-	// fmt.Printf("findWeakNode, size: %d - n: %T %v\n", size, n, n)
 	for i = n.nextArc; i < size; i++ {
 		stats.ArcScans++
 		if PseudoCtx.LowestLabel {
-			// fmt.Printf("\t1, n.outOfTree[i].to.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].to.label, lowestStrongLabel-1)
 			if n.outOfTree[i].to.label == lowestStrongLabel-1 {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.to
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				// fmt.Printf("\t1, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
-			// fmt.Printf("\t2, n.outOfTree[i].from.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].from.label, lowestStrongLabel-1)
 			if n.outOfTree[i].from.label == (lowestStrongLabel - 1) {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.from
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				// fmt.Printf("\t2, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
 		} else {
-			// fmt.Printf("\t3, n.outOfTree[i].to.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].to.label, highestStrongLabel-1)
 			if n.outOfTree[i].to.label == (highestStrongLabel - 1) {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.to
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				// fmt.Printf("\t3, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
-			// fmt.Printf("\t4, n.outOfTree[i].from.label %d, LowestStrongLabel-1: %d\n", n.outOfTree[i].from.label, highestStrongLabel-1)
 			if n.outOfTree[i].from.label == (highestStrongLabel - 1) {
 				n.nextArc = i
 				out = n.outOfTree[i]
 				weakNode = out.from
 				n.numberOutOfTree--
 				n.outOfTree[i] = n.outOfTree[n.numberOutOfTree]
-				// fmt.Printf("\t4, out: %T %v | weakNode: %T %v\n", out, out, weakNode, weakNode)
 				return out, weakNode
 			}
 		}
 	}
 
-	// fmt.Println("\t5. n.nextArc:", n.nextArc, "n.numberOutOfTree:", n.numberOutOfTree)
 	n.nextArc = n.numberOutOfTree
 	return nil, nil
 
@@ -601,7 +554,6 @@ func (n *node) minisort() {
 	for i = n.nextArc + 1; i < size && tempflow < n.outOfTree[i].flow; i++ {
 		n.outOfTree[i-1] = n.outOfTree[i]
 	}
-	// fmt.Printf("i: %d, n: %T %v \n", i, n, n)
 	n.outOfTree[i-1] = temp
 }
 
@@ -613,7 +565,6 @@ func (n *node) decompose(source uint, iteration *uint) {
 	current := n
 	var tempArc *arc
 	bottleneck := n.excess
-	// fmt.Println("num:", n.number, "label:", n.label, "bottleneck:", bottleneck)
 
 	for ; current.number != source && current.visited < *iteration; current = tempArc.from {
 		current.visited = *iteration
@@ -866,7 +817,6 @@ func ReadDimacsFile(fh *os.File) error {
 				return err
 			}
 			capacity = int(n)
-			// fmt.Println("from:", from, "to:", to, "cap:", capacity)
 
 			// What's the point of loading arcList this way?
 			// 	(1+3)%2 = 0 --> arcList[first]
@@ -919,29 +869,20 @@ func ReadDimacsFile(fh *os.File) error {
 		to = arcList[i].to.number
 		from = arcList[i].from.number
 		capacity = arcList[i].capacity
-		// fmt.Println("i:", i, "to:", to, "from:", from, "cap:", capacity)
 
 		if !(source == to || sink == from || from == to) {
 			if source == from && to == sink {
 				arcList[i].flow = capacity
-				// fmt.Println("1.", arcList[i].flow)
 			} else if from == source || to != sink {
 				adjacencyList[from-1].addOutOfTreeNode(arcList[i])
-				// fmt.Println("2. addOutOfTreeNode")
 			} else if to == sink {
 				adjacencyList[to-1].addOutOfTreeNode(arcList[i])
-				// fmt.Println("3. addOutOfTreeNode")
 			} else {
 				adjacencyList[from-1].addOutOfTreeNode(arcList[i])
-				// fmt.Println("4. addOutOfTreeNode")
 			}
 		}
 	}
 
-	// fmt.Println("ReadDimacsFile end")
-	// for i, v := range adjacencyList {
-	// 	fmt.Println("\t", i, "num:", v.number, "label:", v.label, "excess:", v.excess)
-	// }
 	return nil
 }
 
@@ -950,46 +891,26 @@ func SimpleInitialization() {
 	var i, size uint
 	var tempArc *arc
 
-	// fmt.Println("SimpleInitialization start")
-	// for i, v := range adjacencyList {
-	// 	fmt.Println("\t", i, "num:", v.number, "label:", v.label, "excess:", v.excess)
-	// }
 
-	// fmt.Println("source:", source, "len:", len(adjacencyList))
 	size = adjacencyList[source-1].numberOutOfTree
-	// fmt.Println("size1:", size)
 	for i = 0; i < size; i++ {
 		tempArc = adjacencyList[source-1].outOfTree[i]
 		tempArc.flow = tempArc.capacity
 		tempArc.to.excess += tempArc.capacity
-		// fmt.Println("1. to.excess:", tempArc.to.excess)
 	}
 
-	// fmt.Println("SimpleInitialization 2 -")
-	// for i, v := range adjacencyList {
-	// 	fmt.Println("\t", i, "num:", v.number, "label:", v.label, "excess:", v.excess)
-	// }
 
-	// fmt.Println("sink:", sink)
 	size = adjacencyList[sink-1].numberOutOfTree
-	// fmt.Println("size2:", size)
 	for i = 0; i < size; i++ {
 		tempArc = adjacencyList[sink-1].outOfTree[i]
 		tempArc.flow = tempArc.capacity
 		tempArc.from.excess -= tempArc.capacity
-		// fmt.Println("2. to.excess:", tempArc.to.excess)
 	}
-
-	// fmt.Println("SimpleInitialization 3 -")
-	// for i, v := range adjacencyList {
-	// fmt.Println("\t", i, "num:", v.number, "label:", v.label, "excess:", v.excess)
-	// }
 
 	adjacencyList[source-1].excess = 0
 	adjacencyList[sink-1].excess = 0
 
 	for i = 0; i < numNodes; i++ {
-		// fmt.Println("3. to.excess:", i, ":", adjacencyList[i].excess)
 		if adjacencyList[i].excess > 0 {
 			adjacencyList[i].label = 1
 			labelCount[1]++
@@ -1000,40 +921,23 @@ func SimpleInitialization() {
 	adjacencyList[source-1].label = numNodes
 	adjacencyList[sink-1].label = 0
 	labelCount[0] = (numNodes - 2) - labelCount[1]
-
-	// fmt.Println("SimpleInitialization end")
-	// for i, v := range adjacencyList {
-	// 	fmt.Println("\t", i, "num:", v.number, "label:", v.label, "excess:", v.excess)
-	// }
 }
 
 // FlowPhaseOne implements pseudoFlowPhaseOne of C source code.
 func FlowPhaseOne() {
 	var strongRoot *node
 
-	// fmt.Println("FlowPhaseOne start")
-	// for i, v := range adjacencyList {
-	// 	fmt.Println("\t", i, "num:", v.number, "label:", v.label, "excess:", v.excess)
-	// }
-
 	if PseudoCtx.LowestLabel {
 		strongRoot = getLowestStrongRoot()
-		// fmt.Println("LowestLable:", strongRoot)
 		for ; strongRoot != nil; strongRoot = getLowestStrongRoot() {
 			strongRoot.processRoot()
 		}
 	} else {
 		strongRoot = getHighestStrongRoot()
-		// fmt.Println("!LowestLable:", strongRoot, "strongRoot", strongRoot)
 		for ; strongRoot != nil; strongRoot = getHighestStrongRoot() {
 			strongRoot.processRoot()
 		}
 	}
-
-	// fmt.Println("FlowPhaseOne end")
-	// for i, v := range adjacencyList {
-	// 	fmt.Println("\t", i, "num:", v.number, "label:", v.label, "excess:", v.excess)
-	// }
 }
 
 // static void
@@ -1057,7 +961,6 @@ func RecoverFlow() {
 
 	for i = 0; i < adjacencyList[sink-1].numberOutOfTree; i++ {
 		tempArc = adjacencyList[sink-1].outOfTree[i]
-		// fmt.Println("RecoverFlow, from.excess:", tempArc.from.excess, "num:", tempArc.from.number, "label:", tempArc.from.label)
 		if tempArc.from.excess < 0 {
 			if tempArc.from.excess+tempArc.flow < 0 {
 				tempArc.from.excess += tempArc.flow
@@ -1067,7 +970,6 @@ func RecoverFlow() {
 				tempArc.from.excess = 0
 			}
 		}
-		// fmt.Println("RecoverFlow, from.excess:", tempArc.from.excess, "num:", tempArc.from.number, "label:", tempArc.from.label)
 	}
 
 	for i = 0; i < adjacencyList[source-1].numberOutOfTree; i++ {
@@ -1217,22 +1119,10 @@ func Run(input string) ([]string, error) {
 		return nil, err
 	}
 	timer.readfile = time.Now()
-	fmt.Println("----- ReadDimacsFile -----")
-	printArcList()
-	printAdjacencyList()
-	printStrongRoots()
 	SimpleInitialization()
 	timer.initialize = time.Now()
-	fmt.Println("----- SimpleInitialization -----")
-	printArcList()
-	printAdjacencyList()
-	printStrongRoots()
 	FlowPhaseOne()
 	timer.flow = time.Now()
-	fmt.Println("----- FlowPhaseOne -----")
-	printArcList()
-	printAdjacencyList()
-	printStrongRoots()
 	RecoverFlow()
 	timer.recflow = time.Now()
 	ret := Result("Data: " + input)
@@ -1320,11 +1210,48 @@ func quickSort(arr []*arc, first, last uint) {
 
 // ========================== debugging the logic ==============
 
+func printArc(a *arc) {
+	if a != nil {
+		fmt.Printf("\t%v %v %v %v %v\n", a.from.number, a.to.number, a.flow, a.capacity, a.direction)
+	} else {
+		fmt.Println("nil")
+	}
+}
+
 func printArcList() {
 	fmt.Println("n from to flow capacity direction")
 	for n, v := range arcList {
 		fmt.Printf("%d: %v %v %v %v %v\n", n, v.from.number, v.to.number, v.flow, v.capacity, v.direction)
 	}
+}
+
+func printNode(n *node) {
+	var childList, next, nextScan, parent int
+	if n == nil {
+		fmt.Println("nil")
+		return
+	}
+		if n.childList != nil {
+			childList = int(n.childList.number)
+		} else {
+			childList = -1
+		}
+		if n.next != nil {
+			next = int(n.next.number)
+		} else {
+			next = -1
+		}
+		if n.nextScan != nil {
+			nextScan = int(n.nextScan.number)
+		} else {
+			nextScan = -1
+		}
+		if n.parent != nil {
+			parent = int(n.parent.number)
+		} else {
+			parent = -1
+		}
+		fmt.Printf("\t%v %v %v %v %v %v %v %v %v %v\n", childList, n.excess, n.label, next, n.nextArc, nextScan, n.numAdjacent, n.number, n.numberOutOfTree, parent)
 }
 
 func printAdjacencyList() {
