@@ -31,7 +31,7 @@ func TestReadDimacsFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = ReadDimacsFile(fh)
+	err = readDimacsFile(fh)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,4 +106,5 @@ func TestRunCase1(t *testing.T) {
 	}
 
 	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
 }

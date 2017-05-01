@@ -11,10 +11,9 @@
 
 // Package pseudo is a port of pseudo3.23 from C to Go.
 //
-// The easiest way to use this package is to call pseudo.Run(<input file>) after setting
-// the runtime context options, if desired. However it is also possible to call the
-// individual processing functions - ReadDimacsFile, SimpleInitialization, FlowPhaseOne,
-// RecoverFlow, Results - sequentially.
+// The way to use this package is to call pseudo.Run(<input file>) after setting
+// the runtime context options.  Internal processing statistics and timings are
+// are available after Run is called with StatsJSON and TimerJSON.
 package pseudo
 
 import (
@@ -430,11 +429,6 @@ func (n *node) breakRelationship(child *node) {
 	var current *node
 	child.parent = nil
 
-	// TODO(clb): this shouldn't be happening
-	if n == nil {
-		return
-	}
-
 	if n.childList == child {
 		n.childList = child.next
 		child.next = nil
@@ -452,10 +446,6 @@ func (n *node) breakRelationship(child *node) {
 // (*node) addRelationship
 // CLB: implement as static void function, calling code ignores return value
 func (n *node) addRelationship(child *node) {
-	// TODO(clb): this shouldn't be happening
-	// if n == nil {
-	// 	return
-	// }
 	child.parent = n
 	child.next = n.childList
 	n.childList = child
@@ -737,7 +727,7 @@ func checkOptimality() []string {
 		ret = append(ret, "c ", "c Flow is not optimal - max flow does not equal min cut")
 	}
 	if check {
-		ret = append(ret, "c ", "c Solution checks as optimal", "c Solution")
+		ret = append(ret, "c ", "c Solution checks as optimal", "c ", "c Solution")
 		ret = append(ret, fmt.Sprintf("s %d", mincut))
 	}
 
@@ -1146,18 +1136,18 @@ var timer = struct {
 // included in result.
 func TimerJSON() string {
 	type times struct {
-		ReadDimacsFile       time.Duration `json:"readDimacsFile"`
-		SimpleInitialization time.Duration `json:"simpleInitialization"`
-		FlowPhaseOne         time.Duration `json:"flowPhaseOne"`
-		RecoverFlow          time.Duration `json:"recoverFlow"`
-		Total                time.Duration `json:"total"`
+		ReadDimacsFile       string `json:"readDimacsFile"`
+		SimpleInitialization string `json:"simpleInitialization"`
+		FlowPhaseOne         string `json:"flowPhaseOne"`
+		RecoverFlow          string `json:"recoverFlow"`
+		Total                string `json:"total"`
 	}
 	data := times{
-		timer.readfile.Sub(timer.start),
-		timer.initialize.Sub(timer.readfile),
-		timer.flow.Sub(timer.initialize),
-		timer.recflow.Sub(timer.flow),
-		timer.recflow.Sub(timer.start),
+		timer.readfile.Sub(timer.start).String(),
+		timer.initialize.Sub(timer.readfile).String(),
+		timer.flow.Sub(timer.initialize).String(),
+		timer.recflow.Sub(timer.flow).String(),
+		timer.recflow.Sub(timer.start).String(),
 	}
 	j, _ := json.Marshal(data)
 	return string(j)
