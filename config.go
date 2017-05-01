@@ -60,7 +60,7 @@ func Config(file string) error {
 		return fmt.Errorf("no pseudo config object in %s", file)
 	}
 
-	InitGlobals()
+	initGlobals()
 	return nil
 }
 */

@@ -37,8 +37,8 @@ var arcList []*arc
 var labelCount []uint
 var numNodes, numArcs, source, sink uint
 
-// InitGlobals - MUST be called after setting PseudoCtx members.
-func InitGlobals() {
+// initGlobals - MUST be called after setting PseudoCtx members.
+func initGlobals() {
 	if PseudoCtx.LowestLabel {
 		lowestStrongLabel = 1
 	} else {
@@ -679,7 +679,7 @@ type root struct {
 // 	}
 // }
 
-// ================ results
+// ========================== functions implementing solution logic ============================
 
 // static void
 // checkOptimality (const uint gap)
@@ -760,10 +760,8 @@ func displayFlow() []string {
 	return ret
 }
 
-// ================ public functions =====================
-
 // ReadDimacsFile implements readDimacsFile of C source code.
-func ReadDimacsFile(fh *os.File) error {
+func readDimacsFile(fh *os.File) error {
 	var i, numLines, from, to, first, last uint
 	var capacity int
 	var ch1 string
@@ -928,7 +926,7 @@ func ReadDimacsFile(fh *os.File) error {
 }
 
 // SimpleInitialization implements simpleInitialization of C source code.
-func SimpleInitialization() {
+func simpleInitialization() {
 	var i, size uint
 	var tempArc *arc
 
@@ -964,7 +962,7 @@ func SimpleInitialization() {
 }
 
 // FlowPhaseOne implements pseudoFlowPhaseOne of C source code.
-func FlowPhaseOne() {
+func flowPhaseOne() {
 	var strongRoot *node
 
 	if PseudoCtx.LowestLabel {
@@ -990,7 +988,7 @@ func FlowPhaseOne() {
 
 // RecoverFlow implements recoverFlow of C source code.
 // It internalizes setting 'gap' value.
-func RecoverFlow() {
+func recoverFlow() {
 	// setting gap value is taken out of main() in C source code
 	var gap uint
 	if PseudoCtx.LowestLabel {
@@ -1095,7 +1093,7 @@ func RecoverFlow() {
 //	f 1 2 5
 //	f 1 3 10
 //	...
-func Result(header string) []string {
+func result(header string) []string {
 	// header and runtime config info
 	ret := []string{
 		"c " + header,
@@ -1126,6 +1124,15 @@ func Result(header string) []string {
 	ret = append(ret, displayFlow()...)
 
 	return ret
+}
+
+// ================ public functions =====================
+
+// ConfigPseudo - wrapper for Config which is currently commented out
+// to avoid vendoring another repo.  See config.go.
+func ConfigPseudo(file string) error {
+	// return Config(file)
+	return fmt.Errorf("currently commented out, set context manually")
 }
 
 // timing info in case someone wants it as in C source main()
@@ -1169,33 +1176,33 @@ func Run(input string) ([]string, error) {
 	defer fh.Close()
 
 	// make sure to set globals
-	InitGlobals()
+	initGlobals()
 
 	// implement C source main()
 	timer.start = time.Now()
-	if err = ReadDimacsFile(fh); err != nil {
+	if err = readDimacsFile(fh); err != nil {
 		return nil, err
 	}
 	timer.readfile = time.Now()
-	SimpleInitialization()
+	simpleInitialization()
 	// fmt.Println("===== SimpleInitialization =====")
 	// printArcList()
 	// printAdjacencyList()
 	// printStrongRoots()
 	timer.initialize = time.Now()
-	FlowPhaseOne()
+	flowPhaseOne()
 	// fmt.Println("===== FlowPhaseOne =====")
 	// printArcList()
 	// printAdjacencyList()
 	// printStrongRoots()
 	timer.flow = time.Now()
-	RecoverFlow()
+	recoverFlow()
 	// fmt.Println("===== RecoverFlow =====")
 	// printArcList()
 	// printAdjacencyList()
 	// printStrongRoots()
 	timer.recflow = time.Now()
-	ret := Result("Data: " + input)
+	ret := result("Data: " + input)
 	// fmt.Println("===== Result =====")
 	// printArcList()
 	// printAdjacencyList()
