@@ -1141,12 +1141,16 @@ var timer = struct {
 }{}
 
 // TimerJSON returns timings of the 4 processing steps of Run -
-// ReadDimacsFile, SimpleInitialization, FlowPhaseOne, and RecoverFlow.
+// readDimacsFile, simpleInitialization, flowPhaseOne, and recoverFlow.
 // Note: the file initialization and result marshaling times are not
 // included in result.
 func TimerJSON() string {
 	type times struct {
-		ReadDimacsFile, SimpleInitialization, FlowPhaseOne, RecoverFlow, Total time.Duration
+		ReadDimacsFile       time.Duration `json:"readDimacsFile"`
+		SimpleInitialization time.Duration `json:"simpleInitialization"`
+		FlowPhaseOne         time.Duration `json:"flowPhaseOne"`
+		RecoverFlow          time.Duration `json:"recoverFlow"`
+		Total                time.Duration `json:"total"`
 	}
 	data := times{
 		timer.readfile.Sub(timer.start),
