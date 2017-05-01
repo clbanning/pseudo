@@ -712,30 +712,31 @@ processRoot (Node *strongRoot)
 
 			if ((out = findWeakNode (strongNode, &weakNode)))
 			{
-				// printArc(out);
-				// printNode(weakNode);
+			//	printArc(out);
+			//	printNode(weakNode);
 
 				merge (weakNode, strongNode, out);
-				// printNode(weakNode);
-				// printNode(strongNode);
-				// printArc(out);
+			//	printNode(weakNode);
+			//	printNode(strongNode);
+			//	printArc(out);
 
 				pushExcess (strongRoot);
-				// printNode(strongRoot);
+			//	printNode(strongRoot);
 
 				return;
 			}
 
 			checkChildren (strongNode);
-			// printNode(strongNode);
+		//	printNode(strongNode);
 		}
 
 		if ((strongNode = strongNode->parent))
 		{
 			checkChildren (strongNode);
-			// printNode(strongNode);
+		//	printNode(strongNode);
 		}
 	}
+//	printArcList();
 
 	addToStrongBucket (strongRoot, &strongRoots[strongRoot->label]);
 	// printStrongRoot(strongRoot->label);
@@ -874,10 +875,14 @@ pseudoflowPhase1 (void)
 #ifdef LOWEST_LABEL
 	while ((strongRoot = getLowestStrongRoot ()))  
 #else
+//	printf("*** ndef LOWEST_LABEL ***\n");
 	while ((strongRoot = getHighestStrongRoot ()))  
 #endif
 	{ 	
+	//	printNode(strongRoot);
 		processRoot (strongRoot);
+	//	printNode(strongRoot);
+	//	printArcList();
 	}
 }
 
@@ -1164,18 +1169,18 @@ decompose (Node *excessNode, const uint source, uint *iteration)
 static void
 recoverFlow (const uint gap)
 {
-	printf("*** recoverFlow ***\ngap: %d\n", gap);
+	// printf("*** recoverFlow ***\ngap: %d\n", gap);
 
 	uint i, j, iteration = 1;
 	Arc *tempArc;
 	Node *tempNode;
 
-	printf("\t--- sink:\n");
+	// printf("\t--- sink:\n");
 	for (i=0; i<adjacencyList[sink-1].numOutOfTree; ++i) 
 	{
 		tempArc = adjacencyList[sink-1].outOfTree[i];
-		printArc(tempArc);
-		printNode(tempArc->from);
+	//	printArc(tempArc);
+	//	printNode(tempArc->from);
 		if (tempArc->from->excess < 0) 
 		{
 			if ((tempArc->from->excess + (int) tempArc->flow)  < 0)
@@ -1189,19 +1194,19 @@ recoverFlow (const uint gap)
 				tempArc->from->excess = 0;
 			}
 		}	
-		printArc(tempArc);
-		printNode(tempArc->from);
+	//	printArc(tempArc);
+	//	printNode(tempArc->from);
 	}
 
-	printf("\t--- source:\n");
+// 	printf("\t--- source:\n");
 	for (i=0; i<adjacencyList[source-1].numOutOfTree; ++i) 
 	{
 		tempArc = adjacencyList[source-1].outOfTree[i];
-		printArc(tempArc);
-		printNode(tempArc->to);
+	//	printArc(tempArc);
+	//	printNode(tempArc->to);
 		addOutOfTreeNode (tempArc->to, tempArc);
-		printArc(tempArc);
-		printNode(tempArc->to);
+	//	printArc(tempArc);
+	//	printNode(tempArc->to);
 	}
 
 	adjacencyList[source-1].excess = 0;
@@ -1464,10 +1469,10 @@ main(int argc, char ** argv)
 	simpleInitialization ();
 	initEnd=timer ();
 
-	printf("===== simpleInitialization ====\n");
-	printArcList();
-	printAdjacencyList();
-	printStrongRoots();
+// 	printf("===== simpleInitialization ====\n");
+// 	printArcList();
+// 	printAdjacencyList();
+// 	printStrongRoots();
 
 #ifdef PROGRESS
 	printf ("c Finished initialization.\n"); fflush (stdout);
@@ -1477,10 +1482,10 @@ main(int argc, char ** argv)
 	pseudoflowPhase1 ();
 	solveEnd=timer ();
 
-	printf("===== pseudoflowPhase1 ====\n");
-	printArcList();
-	printAdjacencyList();
-	printStrongRoots();
+// 	printf("===== pseudoflowPhase1 ====\n");
+// 	printArcList();
+// 	printAdjacencyList();
+// 	printStrongRoots();
 
 
 #ifdef PROGRESS
@@ -1496,10 +1501,10 @@ main(int argc, char ** argv)
 	flowStart = solveEnd;
 	recoverFlow(gap);
 
-	printf("===== recoverFlow ====\n");
-	printArcList();
-	printAdjacencyList();
-	printStrongRoots();
+// 	printf("===== recoverFlow ====\n");
+// 	printArcList();
+// 	printAdjacencyList();
+// 	printStrongRoots();
 
 	flowEnd=timer ();
 
@@ -1518,10 +1523,10 @@ main(int argc, char ** argv)
 #endif
 	checkOptimality (gap);
 
-	printf("===== checkOptimality  ====\n");
-	printArcList();
-	printAdjacencyList();
-	printStrongRoots();
+// 	printf("===== checkOptimality  ====\n");
+// 	printArcList();
+// 	printAdjacencyList();
+// 	printStrongRoots();
 #ifdef DISPLAY_CUT
 	displayCut (gap);
 #endif

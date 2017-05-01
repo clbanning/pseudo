@@ -138,7 +138,7 @@ func (a *arc) pushDownward(child, parent *node, flow int) {
 
 	if flow >= child.excess {
 		parent.excess += child.excess
-		a.flow = child.excess
+		a.flow -= child.excess
 		child.excess = 0
 		return
 	}
@@ -337,11 +337,13 @@ func (n *node) processRoot() {
 			// printNode(strongNode)
 		}
 
+		// fmt.Printf("strongNode: %v\n", strongNode.parent)
 		if strongNode = strongNode.parent; strongNode != nil {
 			strongNode.checkChildren()
 			// printNode(strongNode)
 		}
 	}
+	// printArcList()
 
 	n.addToStrongBucket(strongRoots[n.label])
 	// printStrongRoot(n.label)
@@ -399,6 +401,7 @@ func (n *node) pushExcess() {
 		arcToParent = current.arcToParent
 
 		// fmt.Println("\tarcToParent.direction:", arcToParent.direction)
+		// printArc(arcToParent)
 		if arcToParent.direction != 0 {
 			// fmt.Println("\tpushUpward")
 			arcToParent.pushUpward(current, parent, arcToParent.capacity-arcToParent.flow)
@@ -971,8 +974,13 @@ func FlowPhaseOne() {
 		}
 	} else {
 		strongRoot = getHighestStrongRoot()
+		// fmt.Println("*** !LowestLabel ***")
+		// printArcList()
 		for ; strongRoot != nil; strongRoot = getHighestStrongRoot() {
+			// printNode(strongRoot)
 			strongRoot.processRoot()
+			// printNode(strongRoot)
+			// printArcList()
 		}
 	}
 }
@@ -991,19 +999,19 @@ func RecoverFlow() {
 		gap = numNodes
 	}
 
-	fmt.Println("*** RecoverFlow ***")
-	fmt.Println("\tgap:", gap)
+	// fmt.Println("*** RecoverFlow ***")
+	// fmt.Println("\tgap:", gap)
 
 	var i, j uint
 	iteration := uint(1)
 	var tempArc *arc
 	var tempNode *node
 
-	fmt.Println("\t--- sink:")
+	// fmt.Println("\t--- sink:")
 	for i = 0; i < adjacencyList[sink-1].numberOutOfTree; i++ {
 		tempArc = adjacencyList[sink-1].outOfTree[i]
-		printArc(tempArc)
-		printNode(tempArc.from)
+		// printArc(tempArc)
+		// printNode(tempArc.from)
 		if tempArc.from.excess < 0 {
 			if tempArc.from.excess+tempArc.flow < 0 {
 				tempArc.from.excess += tempArc.flow
@@ -1013,18 +1021,18 @@ func RecoverFlow() {
 				tempArc.from.excess = 0
 			}
 		}
-		printArc(tempArc)
-		printNode(tempArc.from)
+		// printArc(tempArc)
+		// printNode(tempArc.from)
 	}
 
-	fmt.Println("\t--- source:")
+	// fmt.Println("\t--- source:")
 	for i = 0; i < adjacencyList[source-1].numberOutOfTree; i++ {
 		tempArc = adjacencyList[source-1].outOfTree[i]
-		printArc(tempArc)
-		printNode(tempArc.to)
+		// printArc(tempArc)
+		// printNode(tempArc.to)
 		tempArc.to.addOutOfTreeNode(tempArc)
-		printArc(tempArc)
-		printNode(tempArc.to)
+		// printArc(tempArc)
+		// printNode(tempArc.to)
 	}
 
 	adjacencyList[source-1].excess = 0
@@ -1170,28 +1178,28 @@ func Run(input string) ([]string, error) {
 	}
 	timer.readfile = time.Now()
 	SimpleInitialization()
-	fmt.Println("===== SimpleInitialization =====")
-	printArcList()
-	printAdjacencyList()
-	printStrongRoots()
+	// fmt.Println("===== SimpleInitialization =====")
+	// printArcList()
+	// printAdjacencyList()
+	// printStrongRoots()
 	timer.initialize = time.Now()
 	FlowPhaseOne()
-	fmt.Println("===== FlowPhaseOne =====")
-	printArcList()
-	printAdjacencyList()
-	printStrongRoots()
+	// fmt.Println("===== FlowPhaseOne =====")
+	// printArcList()
+	// printAdjacencyList()
+	// printStrongRoots()
 	timer.flow = time.Now()
 	RecoverFlow()
-	fmt.Println("===== RecoverFlow =====")
-	printArcList()
-	printAdjacencyList()
-	printStrongRoots()
+	// fmt.Println("===== RecoverFlow =====")
+	// printArcList()
+	// printAdjacencyList()
+	// printStrongRoots()
 	timer.recflow = time.Now()
 	ret := Result("Data: " + input)
-	fmt.Println("===== Result =====")
-	printArcList()
-	printAdjacencyList()
-	printStrongRoots()
+	// fmt.Println("===== Result =====")
+	// printArcList()
+	// printAdjacencyList()
+	// printStrongRoots()
 
 	return ret, nil
 }
@@ -1349,16 +1357,16 @@ func printAdjacencyList() {
 }
 
 func printStrongRoot(n uint) {
-		r := strongRoots[n]
-		if r.start == nil && r.end == nil {
-			fmt.Printf("%d: <nil> <nil>\n", n)
-		} else if r.start == nil {
-			fmt.Printf("%d: <nil> %d\n", n, r.end.number)
-		} else if r.end == nil {
-			fmt.Printf("%d: %d <nil>\n", n, r.start.number)
-		} else {
-			fmt.Printf("%d: %d %d\n", n, r.start.number, r.end.number)
-		}
+	r := strongRoots[n]
+	if r.start == nil && r.end == nil {
+		fmt.Printf("%d: <nil> <nil>\n", n)
+	} else if r.start == nil {
+		fmt.Printf("%d: <nil> %d\n", n, r.end.number)
+	} else if r.end == nil {
+		fmt.Printf("%d: %d <nil>\n", n, r.start.number)
+	} else {
+		fmt.Printf("%d: %d %d\n", n, r.start.number, r.end.number)
+	}
 }
 
 func printStrongRoots() {

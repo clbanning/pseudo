@@ -86,7 +86,7 @@ func TestReadDimacsFile(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
+func TestRunCase1(t *testing.T) {
 	PseudoCtx.LowestLabel = false
 	PseudoCtx.FifoBucket = false
 
