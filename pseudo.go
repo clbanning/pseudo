@@ -1110,6 +1110,10 @@ func Run(input string) ([]string, error) {
 	}
 	defer fh.Close()
 
+	// always reinitialize stats - might be making
+	// sucessive calls to Run
+	stats = statistics{}
+
 	// make sure to set globals
 	initGlobals()
 
