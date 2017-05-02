@@ -1149,7 +1149,7 @@ func Run(input string, header ...string) ([]string, error) {
 	recoverFlow()
 	timer.recflow = time.Now()
 
-	// results might have customer header comment
+	// results might have custom header comment
 	var h string
 	if len(header) > 0 {
 		h = header[0]
