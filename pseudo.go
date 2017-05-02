@@ -120,7 +120,6 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 	}
 
 	child.addToStrongBucket(strongRoots[child.label])
-	// printStrongRoot(child.label)
 }
 
 // (*arc) pushDownward
@@ -129,11 +128,6 @@ func (a *arc) pushUpward(child *node, parent *node, resCap int) {
 func (a *arc) pushDownward(child, parent *node, flow int) {
 	stats.Pushes++
 
-	// fmt.Println("\tpushDownward -")
-	// printArc(a)
-	// printNode(child)
-	// printNode(parent)
-	// fmt.Println("\tflow:", flow)
 
 	if flow >= child.excess {
 		parent.excess += child.excess
@@ -154,7 +148,6 @@ func (a *arc) pushDownward(child, parent *node, flow int) {
 	}
 
 	child.addToStrongBucket(strongRoots[child.label])
-	// printStrongRoot(child.label)
 }
 
 // ==================== the node object
@@ -201,7 +194,6 @@ func getLowestStrongRoot() *node {
 			stats.Relabels++
 
 			strongRoot.addToStrongBucket(strongRoots[strongRoot.label])
-			// printStrongRoot(strongRoot.label)
 		}
 		lowestStrongLabel = 1
 	}
@@ -266,7 +258,6 @@ func getHighestStrongRoot() *node {
 		stats.Relabels++
 
 		strongRoot.addToStrongBucket(strongRoots[strongRoot.label])
-		// printStrongRoot(strongRoot.label)
 	}
 
 	highestStrongLabel = 1
@@ -308,9 +299,6 @@ func (n *node) processRoot() {
 	n.checkChildren()
 
 	for strongNode != nil {
-		// fmt.Println("processRoot, strongNode:")
-		// printNode(strongNode)
-
 		for strongNode.nextScan != nil {
 			temp = strongNode.nextScan
 			strongNode.nextScan = strongNode.nextScan.next
@@ -318,34 +306,20 @@ func (n *node) processRoot() {
 			strongNode.nextScan = strongNode.childList
 
 			if out, weakNode = strongNode.findWeakNode(); out != nil {
-				// printArc(out)
-				// printNode(weakNode)
-
 				weakNode.merge(strongNode, out)
-				// printNode(weakNode)
-				// printNode(strongNode)
-				// printArc(out)
-
 				n.pushExcess()
-				// printNode(n)
-
 				return
 			}
 
 			strongNode.checkChildren()
-			// printNode(strongNode)
 		}
 
-		// fmt.Printf("strongNode: %v\n", strongNode.parent)
 		if strongNode = strongNode.parent; strongNode != nil {
 			strongNode.checkChildren()
-			// printNode(strongNode)
 		}
 	}
-	// printArcList()
 
 	n.addToStrongBucket(strongRoots[n.label])
-	// printStrongRoot(n.label)
 
 	if !PseudoCtx.LowestLabel {
 		highestStrongLabel++
@@ -360,11 +334,6 @@ func (n *node) merge(child *node, newArc *arc) {
 	var oldParent *node
 	current := child
 	newParent := n
-
-	// fmt.Println("\t** merge **")
-	// printNode(newParent)
-	// printNode(current)
-	// printArc(newArc)
 
 	stats.Mergers++ // unlike C source always calc stats
 
@@ -399,18 +368,11 @@ func (n *node) pushExcess() {
 
 		arcToParent = current.arcToParent
 
-		// fmt.Println("\tarcToParent.direction:", arcToParent.direction)
-		// printArc(arcToParent)
 		if arcToParent.direction != 0 {
-			// fmt.Println("\tpushUpward")
 			arcToParent.pushUpward(current, parent, arcToParent.capacity-arcToParent.flow)
 		} else {
-			// fmt.Println("\tpushDownward")
 			arcToParent.pushDownward(current, parent, arcToParent.flow)
 		}
-		// printArc(arcToParent)
-		// printNode(current)
-		// printNode(parent)
 	}
 
 	if current.excess > 0 && prevEx <= 0 {
@@ -418,7 +380,6 @@ func (n *node) pushExcess() {
 			lowestStrongLabel = current.label
 		}
 		current.addToStrongBucket(strongRoots[current.label])
-		// printStrongRoot(current.label)
 	}
 }
 
@@ -942,7 +903,6 @@ func simpleInitialization() {
 			adjacencyList[i].label = 1
 			labelCount[1]++
 			adjacencyList[i].addToStrongBucket(strongRoots[1])
-			// printStrongRoot(uint(1))
 		}
 	}
 
@@ -962,20 +922,14 @@ func flowPhaseOne() {
 		}
 	} else {
 		strongRoot = getHighestStrongRoot()
-		// fmt.Println("*** !LowestLabel ***")
-		// printArcList()
 		for ; strongRoot != nil; strongRoot = getHighestStrongRoot() {
-			// printNode(strongRoot)
 			strongRoot.processRoot()
-			// printNode(strongRoot)
-			// printArcList()
 		}
 	}
 }
 
 // static void
 // recoverFlow (const uint gap)
-
 // RecoverFlow implements recoverFlow of C source code.
 // It internalizes setting 'gap' value.
 func recoverFlow() {
@@ -987,19 +941,13 @@ func recoverFlow() {
 		gap = numNodes
 	}
 
-	// fmt.Println("*** RecoverFlow ***")
-	// fmt.Println("\tgap:", gap)
-
 	var i, j uint
 	iteration := uint(1)
 	var tempArc *arc
 	var tempNode *node
 
-	// fmt.Println("\t--- sink:")
 	for i = 0; i < adjacencyList[sink-1].numberOutOfTree; i++ {
 		tempArc = adjacencyList[sink-1].outOfTree[i]
-		// printArc(tempArc)
-		// printNode(tempArc.from)
 		if tempArc.from.excess < 0 {
 			if tempArc.from.excess+tempArc.flow < 0 {
 				tempArc.from.excess += tempArc.flow
@@ -1009,18 +957,11 @@ func recoverFlow() {
 				tempArc.from.excess = 0
 			}
 		}
-		// printArc(tempArc)
-		// printNode(tempArc.from)
 	}
 
-	// fmt.Println("\t--- source:")
 	for i = 0; i < adjacencyList[source-1].numberOutOfTree; i++ {
 		tempArc = adjacencyList[source-1].outOfTree[i]
-		// printArc(tempArc)
-		// printNode(tempArc.to)
 		tempArc.to.addOutOfTreeNode(tempArc)
-		// printArc(tempArc)
-		// printNode(tempArc.to)
 	}
 
 	adjacencyList[source-1].excess = 0
@@ -1179,28 +1120,12 @@ func Run(input string) ([]string, error) {
 	}
 	timer.readfile = time.Now()
 	simpleInitialization()
-	// fmt.Println("===== SimpleInitialization =====")
-	// printArcList()
-	// printAdjacencyList()
-	// printStrongRoots()
 	timer.initialize = time.Now()
 	flowPhaseOne()
-	// fmt.Println("===== FlowPhaseOne =====")
-	// printArcList()
-	// printAdjacencyList()
-	// printStrongRoots()
 	timer.flow = time.Now()
 	recoverFlow()
-	// fmt.Println("===== RecoverFlow =====")
-	// printArcList()
-	// printAdjacencyList()
-	// printStrongRoots()
 	timer.recflow = time.Now()
 	ret := result("Data: " + input)
-	// fmt.Println("===== Result =====")
-	// printArcList()
-	// printAdjacencyList()
-	// printStrongRoots()
 
 	return ret, nil
 }
