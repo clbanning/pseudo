@@ -86,6 +86,22 @@ func TestReadDimacsFile(t *testing.T) {
 	}
 }
 
+func TestRunHeader(t *testing.T) {
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBucket = false
+
+	results, err := Run("_data/dimacsMaxf.txt", "my customer header")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	check := "c my customer header"
+	if results[0] != check {
+		fmt.Println("wanted:", check, "got:", results[0])
+		t.Fatal()
+	}
+}
+
 // LowestLabel == false, FifoBucket == false
 func TestRunCase1(t *testing.T) {
 	PseudoCtx.LowestLabel = false
