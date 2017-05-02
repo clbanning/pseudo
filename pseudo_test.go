@@ -86,6 +86,7 @@ func TestReadDimacsFile(t *testing.T) {
 	}
 }
 
+// LowestLabel == false, FifoBucket == false
 func TestRunCase1(t *testing.T) {
 	PseudoCtx.LowestLabel = false
 	PseudoCtx.FifoBucket = false
@@ -100,6 +101,78 @@ func TestRunCase1(t *testing.T) {
 	input, _ := ioutil.ReadAll(fh)
 	fmt.Println("input:")
 	fmt.Println(string(input))
+
+	for _, v := range results {
+		fmt.Println(v)
+	}
+
+	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
+}
+
+// LowestLabel == true, FifoBucket == false
+func TestRunCase2(t *testing.T) {
+	PseudoCtx.LowestLabel = true
+	PseudoCtx.FifoBucket = false
+
+	results, err := Run("_data/dimacsMaxf.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fh, _ := os.Open("_data/dimacsMaxf.txt")
+	// defer fh.Close()
+	// input, _ := ioutil.ReadAll(fh)
+	// fmt.Println("input:")
+	// fmt.Println(string(input))
+
+	for _, v := range results {
+		fmt.Println(v)
+	}
+
+	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
+}
+
+// LowestLabel == false, FifoBucket == true
+func TestRunCase3(t *testing.T) {
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBucket = true
+
+	results, err := Run("_data/dimacsMaxf.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fh, _ := os.Open("_data/dimacsMaxf.txt")
+	// defer fh.Close()
+	// input, _ := ioutil.ReadAll(fh)
+	// fmt.Println("input:")
+	// fmt.Println(string(input))
+
+	for _, v := range results {
+		fmt.Println(v)
+	}
+
+	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
+}
+
+// LowestLabel == true, FifoBucket == true
+func TestRunCase4(t *testing.T) {
+	PseudoCtx.LowestLabel = true
+	PseudoCtx.FifoBucket = true
+
+	results, err := Run("_data/dimacsMaxf.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fh, _ := os.Open("_data/dimacsMaxf.txt")
+	// defer fh.Close()
+	// input, _ := ioutil.ReadAll(fh)
+	// fmt.Println("input:")
+	// fmt.Println(string(input))
 
 	for _, v := range results {
 		fmt.Println(v)
