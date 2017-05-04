@@ -41,6 +41,7 @@ package pseudo
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -736,15 +737,18 @@ func readDimacsFile(fh *os.File) error {
 		if err != nil && err != io.EOF {
 			return err
 		} else if err == io.EOF {
-			if len(line) == 0 {
+			if len(bytes.TrimSpace(line)) == 0 {
 				break // nothing more to process
 			}
 			// ... at EOF with data but no '\n' line termination.
-			// While not necessary for os.STDIN; it can happen in a file.
+			// While not necessary for os.Stdin; it can happen in a file.
 			atEOF = true
 		} else {
-			// Strip off EOL.
-			line = line[:len(line)-1]
+			// Strip off EOL and white space
+			line = bytes.TrimSpace(line[:len(line)-1])
+			if len(line) == 0 {
+				continue // skip empty lines
+			}
 		}
 		numLines++
 
@@ -851,8 +855,8 @@ func readDimacsFile(fh *os.File) error {
 			} else {
 				return fmt.Errorf("unrecognized character %s on line %d", ch1, numLines)
 			}
-		case '\n', 'c':
-			continue // catches blank lines and "comment" lines - blank lines not in spec.
+		case 'c':
+			continue // catches "comment" lines
 		default:
 			return fmt.Errorf("unknown data: %s", string(line))
 		}
