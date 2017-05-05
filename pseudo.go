@@ -740,7 +740,6 @@ func displayCut() []string {
 	}
 
 	s := []string{
-		"c ",
 		"c Nodes in source set of min s-t cut:",
 	}
 
