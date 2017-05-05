@@ -196,3 +196,15 @@ func TestRunDisplayCut (t *testing.T) {
 	}
 }
 
+func TestRunJSON(t *testing.T) {
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBuckets = false
+	PseudoCtx.DisplayCut = false
+
+	results, err := RunJSON("_data/dimacsMaxf.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(string(results))
+}
+
