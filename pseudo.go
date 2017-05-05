@@ -100,7 +100,7 @@ func initGlobals() {
 // Context provides optional switches that can be set using Config.
 type Context struct {
 	LowestLabel bool
-	FifoBucket  bool
+	FifoBuckets bool
 	DisplayCut  bool // report minimun cut set instead of graph flows
 }
 
@@ -551,7 +551,7 @@ func (n *node) liftAll() {
 }
 
 func (n *node) addToStrongBucket(rootBucket *root) {
-	if PseudoCtx.FifoBucket {
+	if PseudoCtx.FifoBuckets {
 		if rootBucket.start != nil {
 			rootBucket.end.next = n
 			rootBucket.end = n
@@ -1101,7 +1101,7 @@ func result(header string) []string {
 	} else {
 		ret = append(ret, "c Highest label pseudoflow algorithm")
 	}
-	if PseudoCtx.FifoBucket {
+	if PseudoCtx.FifoBuckets {
 		ret = append(ret, "c Using FIFO buckets")
 	} else {
 		ret = append(ret, "c Using LIFO buckets")

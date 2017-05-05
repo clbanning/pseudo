@@ -88,7 +88,7 @@ func TestReadDimacsFile(t *testing.T) {
 
 func TestRunHeader(t *testing.T) {
 	PseudoCtx.LowestLabel = false
-	PseudoCtx.FifoBucket = false
+	PseudoCtx.FifoBuckets = false
 
 	results, err := Run("_data/dimacsMaxf.txt", "my customer header")
 	if err != nil {
@@ -102,10 +102,10 @@ func TestRunHeader(t *testing.T) {
 	}
 }
 
-// LowestLabel == false, FifoBucket == false
+// LowestLabel == false, FifoBuckets == false
 func TestRunCase1(t *testing.T) {
 	PseudoCtx.LowestLabel = false
-	PseudoCtx.FifoBucket = false
+	PseudoCtx.FifoBuckets = false
 
 	results, err := Run("_data/dimacsMaxf.txt")
 	if err != nil {
@@ -126,10 +126,10 @@ func TestRunCase1(t *testing.T) {
 	fmt.Println("timer:", TimerJSON())
 }
 
-// LowestLabel == true, FifoBucket == false
+// LowestLabel == true, FifoBuckets == false
 func TestRunCase2(t *testing.T) {
 	PseudoCtx.LowestLabel = true
-	PseudoCtx.FifoBucket = false
+	PseudoCtx.FifoBuckets = false
 
 	results, err := Run("_data/dimacsMaxf.txt")
 	if err != nil {
@@ -144,10 +144,10 @@ func TestRunCase2(t *testing.T) {
 	fmt.Println("timer:", TimerJSON())
 }
 
-// LowestLabel == false, FifoBucket == true
+// LowestLabel == false, FifoBuckets == true
 func TestRunCase3(t *testing.T) {
 	PseudoCtx.LowestLabel = false
-	PseudoCtx.FifoBucket = true
+	PseudoCtx.FifoBuckets = true
 
 	results, err := Run("_data/dimacsMaxf.txt")
 	if err != nil {
@@ -162,10 +162,10 @@ func TestRunCase3(t *testing.T) {
 	fmt.Println("timer:", TimerJSON())
 }
 
-// LowestLabel == true, FifoBucket == true
+// LowestLabel == true, FifoBuckets == true
 func TestRunCase4(t *testing.T) {
 	PseudoCtx.LowestLabel = true
-	PseudoCtx.FifoBucket = true
+	PseudoCtx.FifoBuckets = true
 
 	results, err := Run("_data/dimacsMaxf.txt")
 	if err != nil {
@@ -183,7 +183,7 @@ func TestRunCase4(t *testing.T) {
 // Report cut set rather than flows
 func TestRunDisplayCut (t *testing.T) {
 	PseudoCtx.LowestLabel = false
-	PseudoCtx.FifoBucket = false
+	PseudoCtx.FifoBuckets = false
 	PseudoCtx.DisplayCut = true
 
 	results, err := Run("_data/dimacsMaxf.txt")
