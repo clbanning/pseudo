@@ -136,13 +136,7 @@ func TestRunCase2(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// fh, _ := os.Open("_data/dimacsMaxf.txt")
-	// defer fh.Close()
-	// input, _ := ioutil.ReadAll(fh)
-	// fmt.Println("input:")
-	// fmt.Println(string(input))
-
-	for _, v := range results {
+		for _, v := range results {
 		fmt.Println(v)
 	}
 
@@ -159,12 +153,6 @@ func TestRunCase3(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// fh, _ := os.Open("_data/dimacsMaxf.txt")
-	// defer fh.Close()
-	// input, _ := ioutil.ReadAll(fh)
-	// fmt.Println("input:")
-	// fmt.Println(string(input))
 
 	for _, v := range results {
 		fmt.Println(v)
@@ -184,12 +172,6 @@ func TestRunCase4(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// fh, _ := os.Open("_data/dimacsMaxf.txt")
-	// defer fh.Close()
-	// input, _ := ioutil.ReadAll(fh)
-	// fmt.Println("input:")
-	// fmt.Println(string(input))
-
 	for _, v := range results {
 		fmt.Println(v)
 	}
@@ -197,3 +179,20 @@ func TestRunCase4(t *testing.T) {
 	fmt.Println("\nstats:", StatsJSON())
 	fmt.Println("timer:", TimerJSON())
 }
+
+// Report cut set rather than flows
+func TestRunDisplayCut (t *testing.T) {
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBucket = false
+	PseudoCtx.DisplayCut = true
+
+	results, err := Run("_data/dimacsMaxf.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, v := range results {
+		fmt.Println(v)
+	}
+}
+

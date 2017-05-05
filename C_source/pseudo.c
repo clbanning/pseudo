@@ -81,7 +81,7 @@ static uint numGaps = 0;
 static ullint numArcScans = 0;
 #endif
 
-#ifdef DISPLAY_CUT
+// #ifdef DISPLAY_CUT
 static void
 displayCut (const uint gap) 
 {
@@ -97,9 +97,9 @@ displayCut (const uint gap)
 		}
 	}
 }
-#endif
+// #endif
 
-// #ifdef DISPLAY_FLOW
+#ifdef DISPLAY_FLOW
 static void
 displayFlow (void) 
 {
@@ -112,7 +112,7 @@ displayFlow (void)
 		printf("a %d %d %d\n", arcList[i].from->number, arcList[i].to->number, arcList[i].flow);
 	}
 }
-// #endif
+#endif
 
 static void
 initializeNode (Node *nd, const uint n)
@@ -1298,13 +1298,13 @@ main(int argc, char ** argv)
 #endif
 	checkOptimality (gap);
 
-#ifdef DISPLAY_CUT
+// #ifdef DISPLAY_CUT
 	displayCut (gap);
-#endif
-
-// #ifdef DISPLAY_FLOW
-	displayFlow ();
 // #endif
+
+#ifdef DISPLAY_FLOW
+	displayFlow ();
+#endif
 
 	freeMemory ();
 
