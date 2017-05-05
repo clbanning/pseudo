@@ -13,7 +13,7 @@ func main() {
 	var reportStats, reportTimes, stdin bool
 	var output string
 	flag.BoolVar(&p.PseudoCtx.LowestLabel, "lowestlabel", false, "set LowestLabel == true")
-	flag.BoolVar(&p.PseudoCtx.FifoBucket, "fifobuckets", false, "set fifobucket == true")
+	flag.BoolVar(&p.PseudoCtx.FifoBuckets, "fifobuckets", false, "set fifobucket == true")
 	flag.BoolVar(&p.PseudoCtx.DisplayCut, "displaycut", false, "report min cut rather than flows")
 	flag.BoolVar(&reportStats, "stats", false, "report flow computational metrics")
 	flag.BoolVar(&reportTimes, "times", false, "report timer metrics")
