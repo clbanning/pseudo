@@ -14,6 +14,13 @@ A sample command-line program that supports most options is in cmd/pseudo.
 
 Release 1.0.  (Note: could do with more testing with larger data sets.)
 
+<h2>TODO</h2>
+
+Refactor to make it safe for concurrency; then package can be used in a server.
+
+- Wrap Context, statistics, timer and globals in a Session.
+- NewSession(c Context) initializes a session.
+- (s *Session) Run() executes the logic within for a Session.
 
 [c_ref]: http://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html
 [docs]: https://godoc.org/github.com/clbanning/pseudo
