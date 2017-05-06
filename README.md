@@ -20,7 +20,7 @@ Refactor to make it safe for concurrency; then package can be used in a server.
 
 - Wrap Context, statistics, timer and globals in a Session.
 - NewSession(c Context) initializes a session.
-- (s *Session) Run() executes the logic within for a Session.
+- (s *Session) Run() executes the logic within a Session.
 
 [c_ref]: http://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html
 [docs]: https://godoc.org/github.com/clbanning/pseudo
