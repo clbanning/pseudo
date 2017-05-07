@@ -18,4 +18,4 @@ Release 2.0.  (Note: could do with more testing with larger data sets.)
 [c_ref]: http://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html
 [docs]: https://godoc.org/github.com/clbanning/pseudo
 [v1.2]: https://github.com/clbanning/pseudo/v1.2
-[comdline]: https://github.com/clbanning/pseudo/cmd/pseudo
+[cmdline]: https://github.com/clbanning/pseudo/cmd/pseudo
