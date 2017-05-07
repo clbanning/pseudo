@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	// "time"
 )
 
 /*
@@ -26,58 +27,54 @@ import (
    a 5 6 5
 */
 func TestReadDimacsFile(t *testing.T) {
-	s := NewSession(Context{})
-
-	fh, err := os.Open("_data/dimacsMaxf.txt")
+	fh, err := os.Open("../_data/dimacsMaxf.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer fh.Close()
-
-	err = s.readDimacsFile(fh)
+	err = readDimacsFile(fh)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// check some allocations made by 'p' record
-	if s.numNodes != uint(6) {
-		fmt.Println("numNodes != 6 :", s.numNodes)
+	if numNodes != uint(6) {
+		fmt.Println("numNodes != 6 :", numNodes)
 		t.Fatal()
 	}
-	if s.numArcs != uint(8) {
-		fmt.Println("numArcs != 8 :", s.numArcs)
+	if numArcs != uint(8) {
+		fmt.Println("numArcs != 8 :", numArcs)
 		t.Fatal()
 	}
-	if uint(len(s.adjacencyList)) != s.numNodes {
-		fmt.Println("len(adjacencyList):", len(s.adjacencyList), "numNodes:", s.numNodes)
+	if uint(len(adjacencyList)) != numNodes {
+		fmt.Println("len(adjacencyList):", len(adjacencyList), "numNodes:", numNodes)
 		t.Fatal()
 	}
-	if uint(len(s.strongRoots)) != s.numNodes {
-		fmt.Println("len(strongRoots):", len(s.strongRoots), "numNodes:", s.numNodes)
+	if uint(len(strongRoots)) != numNodes {
+		fmt.Println("len(strongRoots):", len(strongRoots), "numNodes:", numNodes)
 		t.Fatal()
 	}
-	if uint(len(s.labelCount)) != s.numNodes {
-		fmt.Println("len(labelCount):", len(s.labelCount), "numNodes:", s.numNodes)
+	if uint(len(labelCount)) != numNodes {
+		fmt.Println("len(labelCount):", len(labelCount), "numNodes:", numNodes)
 		t.Fatal()
 	}
-	if uint(len(s.arcList)) != s.numArcs {
-		fmt.Println("len(arcList):", len(s.arcList), "numNodes:", s.numNodes)
+	if uint(len(arcList)) != numArcs {
+		fmt.Println("len(arcList):", len(arcList), "numNodes:", numNodes)
 		t.Fatal()
 	}
 
 	// check values set by 'n' records
-	if s.source != uint(1) {
-		fmt.Println("source != 1 :", s.source)
+	if source != uint(1) {
+		fmt.Println("source != 1 :", source)
 		t.Fatal()
 	}
-	if s.sink != uint(6) {
-		fmt.Println("sink != 6 :", s.sink)
+	if sink != uint(6) {
+		fmt.Println("sink != 6 :", source)
 		t.Fatal()
 	}
 
 	// check arc record parsing
 	checkVals := map[string]int{ "1_2":5, "1_3":15, "2_4":5, "2_5":5, "3_4":5, "3_5":5, "4_6":15, "5_6":5}
-	for k, v := range s.arcList {
+	for k, v := range arcList {
 		ck := strconv.Itoa(int(v.from.number))+"_"+strconv.Itoa(int(v.to.number))
 		if vcap, ok := checkVals[ck]; !ok {
 			fmt.Println("unknown ck:", ck)
@@ -90,9 +87,10 @@ func TestReadDimacsFile(t *testing.T) {
 }
 
 func TestRunHeader(t *testing.T) {
-	s := NewSession(Context{})
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBuckets = false
 
-	results, err := s.Run("_data/dimacsMaxf.txt", "my customer header")
+	results, err := Run("../_data/dimacsMaxf.txt", "my customer header")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,14 +104,15 @@ func TestRunHeader(t *testing.T) {
 
 // LowestLabel == false, FifoBuckets == false
 func TestRunCase1(t *testing.T) {
-	s := NewSession(Context{})
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBuckets = false
 
-	results, err := s.Run("_data/dimacsMaxf.txt")
+	results, err := Run("../_data/dimacsMaxf.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	fh, _ := os.Open("_data/dimacsMaxf.txt")
+	fh, _ := os.Open("../_data/dimacsMaxf.txt")
 	defer fh.Close()
 	input, _ := ioutil.ReadAll(fh)
 	fmt.Println("input:")
@@ -123,15 +122,16 @@ func TestRunCase1(t *testing.T) {
 		fmt.Println(v)
 	}
 
-	fmt.Println("\nstats:", s.StatsJSON())
-	fmt.Println("timer:", s.TimerJSON())
+	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
 }
 
 // LowestLabel == true, FifoBuckets == false
 func TestRunCase2(t *testing.T) {
-	s := NewSession(Context{LowestLabel:true})
+	PseudoCtx.LowestLabel = true
+	PseudoCtx.FifoBuckets = false
 
-	results, err := s.Run("_data/dimacsMaxf.txt")
+	results, err := Run("../_data/dimacsMaxf.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,15 +140,16 @@ func TestRunCase2(t *testing.T) {
 		fmt.Println(v)
 	}
 
-	fmt.Println("\nstats:", s.StatsJSON())
-	fmt.Println("timer:", s.TimerJSON())
+	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
 }
 
 // LowestLabel == false, FifoBuckets == true
 func TestRunCase3(t *testing.T) {
-	s := NewSession(Context{FifoBuckets:true})
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBuckets = true
 
-	results, err := s.Run("_data/dimacsMaxf.txt")
+	results, err := Run("../_data/dimacsMaxf.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,15 +158,16 @@ func TestRunCase3(t *testing.T) {
 		fmt.Println(v)
 	}
 
-	fmt.Println("\nstats:", s.StatsJSON())
-	fmt.Println("timer:", s.TimerJSON())
+	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
 }
 
 // LowestLabel == true, FifoBuckets == true
 func TestRunCase4(t *testing.T) {
-	s := NewSession(Context{LowestLabel:true,FifoBuckets:true})
+	PseudoCtx.LowestLabel = true
+	PseudoCtx.FifoBuckets = true
 
-	results, err := s.Run("_data/dimacsMaxf.txt")
+	results, err := Run("../_data/dimacsMaxf.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,15 +176,17 @@ func TestRunCase4(t *testing.T) {
 		fmt.Println(v)
 	}
 
-	fmt.Println("\nstats:", s.StatsJSON())
-	fmt.Println("timer:", s.TimerJSON())
+	fmt.Println("\nstats:", StatsJSON())
+	fmt.Println("timer:", TimerJSON())
 }
 
 // Report cut set rather than flows
 func TestRunDisplayCut (t *testing.T) {
-	s := NewSession(Context{DisplayCut:true})
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBuckets = false
+	PseudoCtx.DisplayCut = true
 
-	results, err := s.Run("_data/dimacsMaxf.txt")
+	results, err := Run("../_data/dimacsMaxf.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,9 +197,11 @@ func TestRunDisplayCut (t *testing.T) {
 }
 
 func TestRunJSON(t *testing.T) {
-	s := NewSession(Context{})
+	PseudoCtx.LowestLabel = false
+	PseudoCtx.FifoBuckets = false
+	PseudoCtx.DisplayCut = false
 
-	results, err := s.RunJSON("_data/dimacsMaxf.txt")
+	results, err := RunJSON("../_data/dimacsMaxf.txt")
 	if err != nil {
 		t.Fatal(err)
 	}

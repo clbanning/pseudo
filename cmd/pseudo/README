@@ -1,0 +1,1 @@
+Try: cat ../../_data/dimacsMaxf.txt | go run main_v1.2.go -stdin

@@ -1,4 +1,4 @@
-// pseudo.go - a command-line program for using the package github.com/clbanning/pseudo
+// pseudo.go - a command-line program for using the package github.com/clbanning/pseudo/v1.2
 package main
 
 import (
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	p "github.com/clbanning/pseudo"
+	p "github.com/clbanning/pseudo/v1.2"
 )
 
 func main() {
