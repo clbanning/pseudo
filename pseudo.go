@@ -1,4 +1,4 @@
-// Package pseudo is an implementation pseudo3.23 that is safe for concurrent use.
+// Package pseudo is a concurrency safe implementation of Hochbaum's pseudoflow algorithm.
 // It derives from an original port of pseudo3.23 from C to Go that can be used
 // from https://github.com/clbanning/pseudo/v1.2.
 //
