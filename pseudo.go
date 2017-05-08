@@ -78,7 +78,7 @@ import (
 	"time"
 )
 
-// the Session object
+// Session is the runtime container.
 type Session struct {
 	// the runtime context
 	ctx Context
@@ -117,7 +117,7 @@ type timer struct {
 	start, readfile, initialize, flow, recflow time.Time
 }
 
-// NewSession initializes a pseudo Session to the runtime context
+// NewSession returns a pseudo Session initialized to the specified Context.
 // specified by 'c'. Examples:
 //	s := NewSession(Context{})                                 // use default runtime settings
 //	s := NewSession(Context{LowestLabel:true,DisplayCut:true}) // use LowestLabel logic and output the minimum cut
