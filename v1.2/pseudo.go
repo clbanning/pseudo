@@ -1193,6 +1193,8 @@ func Run(input string, header ...string) ([]string, error) {
 	if err = readDimacsFile(fh); err != nil {
 		return nil, err
 	}
+	fh.Close() // might be ginormous data set ...
+
 	timer.readfile = time.Now()
 	simpleInitialization()
 	timer.initialize = time.Now()

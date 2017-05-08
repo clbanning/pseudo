@@ -1186,10 +1186,14 @@ func (s *Session) Run(input string, header ...string) ([]string, error) {
 	s.stats = statistics{}
 
 	// implement C source main()
+	// load the data ...
 	s.times.start = time.Now()
 	if err = s.readDimacsFile(fh); err != nil {
 		return nil, err
 	}
+	fh.Close() // might be a ginormous data set, don't keep open
+
+	// find the solution ... 
 	s.times.readfile = time.Now()
 	s.simpleInitialization()
 	s.times.initialize = time.Now()
