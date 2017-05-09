@@ -1,3 +1,8 @@
+// pseudo.go - a concurrency safe implementation of Hochbaum's pseudoflow algorithm.
+// Copyright (c) 2017 C. L. Banning (clbanning@gmail.com).  All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // Package pseudo is a concurrency safe implementation of Hochbaum's pseudoflow algorithm.
 // It derives from an original port of pseudo3.23 from C to Go that can be used
 // from https://github.com/clbanning/pseudo/v1.2.
