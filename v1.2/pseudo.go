@@ -769,12 +769,12 @@ func displayFlow() []string {
 }
 
 // ReadDimacsFile implements readDimacsFile of C source code.
-func readDimacsFile(fh *os.File) error {
+func readDimacsFile(r io.Reader) error {
 	var i, numLines, from, to, first, last uint
 	var capacity int
 	var ch1 string
 
-	buf := bufio.NewReader(fh)
+	buf := bufio.NewReader(r)
 	var atEOF bool
 	var n uint64
 	for {
@@ -1215,6 +1215,40 @@ func Run(input string, header ...string) ([]string, error) {
 	return ret, nil
 }
 
+// RunReader is a version of Run that accespts an io.Reader for input
+// rather than the name of an input file.
+func RunReader(r io.Reader, header ...string) ([]string, error) {
+	// always reinitialize stats - might be making
+	// sucessive calls to Run
+	stats = statistics{}
+
+	// make sure to set globals
+	initGlobals()
+
+	// implement C source main()
+	timer.start = time.Now()
+	if err := readDimacsFile(r); err != nil {
+		return nil, err
+	}
+
+	timer.readfile = time.Now()
+	simpleInitialization()
+	timer.initialize = time.Now()
+	flowPhaseOne()
+	timer.flow = time.Now()
+	recoverFlow()
+	timer.recflow = time.Now()
+
+	// results might have custom header comment
+	var h string
+	if len(header) > 0 {
+		h = header[0]
+	}
+	ret := result(h)
+
+	return ret, nil
+}
+
 // RunJSON returns the results of Run as a JSON object. This
 // is useful if you want to return results to a JS app.
 func RunJSON(input string, header ...string) ([]byte, error) {
@@ -1224,6 +1258,17 @@ func RunJSON(input string, header ...string) ([]byte, error) {
 	}
 
 	return json.Marshal(r)
+}
+
+// RunReader uses an io.Reader rather than file to process the input
+// and retuns the results as a JSON object.
+func RunReaderJSON(r io.Reader, header ...string) ([]byte, error) {
+	res, err := RunReader(r, header...)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(res)
 }
 
 // ======================== quicksort implementation

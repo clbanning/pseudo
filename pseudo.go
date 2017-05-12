@@ -809,12 +809,12 @@ func (s *Session) displayFlow() []string {
 }
 
 // ReadDimacsFile implements readDimacsFile of C source code.
-func (s *Session) readDimacsFile(fh *os.File) error {
+func (s *Session) readDimacsFile(r io.Reader) error {
 	var i, numLines, from, to, first, last uint
 	var capacity int
 	var ch1 string
 
-	buf := bufio.NewReader(fh)
+	buf := bufio.NewReader(r)
 	var atEOF bool
 	var n uint64
 	for {
@@ -1219,6 +1219,39 @@ func (s *Session) Run(input string, header ...string) ([]string, error) {
 	return ret, nil
 }
 
+// RunReader is Run but takes an io.Reader to process the input rather than 
+// an input file.
+func (s *Session) RunReader(r io.Reader, header ...string) ([]string, error) {
+	// always reinitialize stats - might be making
+	// sucessive calls to Run
+	s.stats = statistics{}
+
+	// implement C source main()
+	// load the data ...
+	s.times.start = time.Now()
+	if err := s.readDimacsFile(r); err != nil {
+		return nil, err
+	}
+
+	// find the solution ... 
+	s.times.readfile = time.Now()
+	s.simpleInitialization()
+	s.times.initialize = time.Now()
+	s.flowPhaseOne()
+	s.times.flow = time.Now()
+	s.recoverFlow()
+	s.times.recflow = time.Now()
+
+	// results might have custom header comment
+	var h string
+	if len(header) > 0 {
+		h = header[0]
+	}
+	ret := s.result(h)
+
+	return ret, nil
+}
+
 // RunJSON returns the results of Run as a JSON object. This
 // is useful if you want to return results to a JS app.
 func (s *Session) RunJSON(input string, header ...string) ([]byte, error) {
@@ -1228,6 +1261,17 @@ func (s *Session) RunJSON(input string, header ...string) ([]byte, error) {
 	}
 
 	return json.Marshal(r)
+}
+
+// RunReaderJSON returns the results of Run as a JSON object. This
+// is useful if you want to return results to a JS app.
+func (s *Session) RunReaderJSON(r io.Reader, header ...string) ([]byte, error) {
+	res, err := s.RunReader(r, header...)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(res)
 }
 
 // ======================== quicksort implementation
