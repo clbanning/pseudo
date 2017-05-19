@@ -1184,37 +1184,10 @@ func (s *Session) Run(input string, header ...string) ([]string, error) {
 	}
 	defer fh.Close()
 
-	// always reinitialize stats - might be making
-	// sucessive calls to Run
-	s.stats = statistics{}
-
-	// implement C source main()
-	// load the data ...
-	s.times.start = time.Now()
-	if err = s.readDimacsFile(fh); err != nil {
-		return nil, err
+	if len(header) == 0 {
+		header = append(header, "Data: " + input)
 	}
-	fh.Close() // might be a ginormous data set, don't keep open
-
-	// find the solution ...
-	s.times.readfile = time.Now()
-	s.simpleInitialization()
-	s.times.initialize = time.Now()
-	s.flowPhaseOne()
-	s.times.flow = time.Now()
-	s.recoverFlow()
-	s.times.recflow = time.Now()
-
-	// results might have custom header comment
-	var h string
-	if len(header) > 0 {
-		h = header[0]
-	} else {
-		h = "Data: " + input
-	}
-	ret := s.result(h)
-
-	return ret, nil
+	return s.RunReader(fh, header...)
 }
 
 // RunReader is Run but takes an io.Reader to process the input rather than
