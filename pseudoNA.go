@@ -11,20 +11,20 @@ import (
 	"strings"
 )
 
-// N is the Dimacs 'n' entry
+// N is the dimacs 'n' entry
 type N struct {
 	Val  uint
 	Node string
 }
 
-// A is the Dimacs 'a' entry
+// A is the dimacs 'a' entry
 type A struct {
 	From     uint
 	To       uint
 	Capacity int
 }
 
-// RunNAWriter solves optimal flow given slices of 'n' and 'a' Dimacs file entries.
+// RunNAWriter solves optimal flow given slices of 'n' and 'a' dimacs entries.
 func (s *Session) RunNAWriter(numNodes, numArcs uint, nodes []N, arcs []A, w io.Writer, header ...string) error {
 	if err := s.parseNA(numNodes, numArcs, nodes, arcs); err != nil {
 		return err
