@@ -17,7 +17,7 @@ type N struct {
 	Node string
 }
 
-// N is the Dimacs 'a' entry
+// A is the Dimacs 'a' entry
 type A struct {
 	From     uint
 	To       uint
