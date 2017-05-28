@@ -1283,6 +1283,11 @@ func (s *Session) RunReadWriter(r io.ReadCloser, w io.Writer, header ...string) 
 	// might be large file, don't keep it open
 	r.Close()
 
+	return s.process(w, header...)
+}
+
+// process handles processing dimacs data. Split out to support s.RunNA.
+func (s *Session) process(w io.Writer, header ...string) error {
 	// find the solution ...
 	s.times.readfile = time.Now()
 	s.simpleInitialization()
