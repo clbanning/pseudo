@@ -26,13 +26,13 @@ type A struct {
 
 // RunNAWriter solves optimal flow given slices of 'n' and 'a' dimacs entries.
 func (s *Session) RunNAWriter(numNodes, numArcs uint, nodes []N, arcs []A, w io.Writer, header ...string) error {
-	if err := s.parseNA(numNodes, numArcs, nodes, arcs); err != nil {
+	if err := s.loadNA(numNodes, numArcs, nodes, arcs); err != nil {
 		return err
 	}
 	return s.process(w, header...)
 }
 
-func (s *Session) parseNA(nn, na uint, n []N, a []A) error {
+func (s *Session) loadNA(nn, na uint, n []N, a []A) error {
 	s.numNodes, s.numArcs = nn, na
 
 	// allocate & initialize storage
@@ -49,9 +49,6 @@ func (s *Session) parseNA(nn, na uint, n []N, a []A) error {
 	for i = 0; i < s.numArcs; i++ {
 		s.arcList[i] = &arc{direction: 1} // newArc(1)
 	}
-
-	first := uint(0)
-	last := s.numArcs - 1
 
 	// process N values
 	if len(n) != 2 {
@@ -78,31 +75,23 @@ func (s *Session) parseNA(nn, na uint, n []N, a []A) error {
 	}
 
 	// process A values
-	var from, to uint
-	var capacity int
+	first := uint(0)
+	last := s.numArcs - 1
 	for _, v := range a {
-		// don't assume that s.sink is s.numNodes
-		from = v.From
-		to = v.To
-		capacity = v.Capacity
-
-		// What's the point of loading arcList this way?
-		// 	(1+3)%2 = 0 --> arcList[first]
-		// 	(1+2)%2 = 1 --> arcList[last]
-		if (from+to)%2 != 0 {
-			s.arcList[first].from = s.adjacencyList[from-1]
-			s.arcList[first].to = s.adjacencyList[to-1]
-			s.arcList[first].capacity = capacity
+		if (v.From+v.To)%2 != 0 {
+			s.arcList[first].from = s.adjacencyList[v.From-1]
+			s.arcList[first].to = s.adjacencyList[v.To-1]
+			s.arcList[first].capacity = v.Capacity
 			first++
 		} else {
-			s.arcList[last].from = s.adjacencyList[from-1]
-			s.arcList[last].to = s.adjacencyList[to-1]
-			s.arcList[last].capacity = capacity
+			s.arcList[last].from = s.adjacencyList[v.From-1]
+			s.arcList[last].to = s.adjacencyList[v.To-1]
+			s.arcList[last].capacity = v.Capacity
 			last--
 		}
 
-		s.adjacencyList[from-1].numAdjacent++
-		s.adjacencyList[to-1].numAdjacent++
+		s.adjacencyList[v.From-1].numAdjacent++
+		s.adjacencyList[v.To-1].numAdjacent++
 	}
 
 	// finish initialization
@@ -110,6 +99,8 @@ func (s *Session) parseNA(nn, na uint, n []N, a []A) error {
 		s.adjacencyList[i].createOutOfTree()
 	}
 
+	var from, to uint
+	var capacity int
 	for i = 0; i < s.numArcs; i++ {
 		to = s.arcList[i].to.number
 		from = s.arcList[i].from.number
