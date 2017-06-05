@@ -10,7 +10,7 @@ An example command-line program is cmd/pseudo/main.go.
 
 <h2>Status</h2>
 
-Release 2.2.  (Note: could do with more testing with larger data sets.)
+Release 2.2.  (Note: large data sets like "_data/BVZ-tsukuba0.max" are VERY MEMORY INTENSIVE and cannot be run on 8 GB machines; for that data set you will need over 128 GB of memory.)
 
 <h2>Prior Versions</h2>
 
