@@ -832,6 +832,7 @@ func (s *Session) readDimacsFile(r io.Reader) error {
 	buf := bufio.NewReader(r)
 	var atEOF bool
 	var n uint64
+	var haveSource, haveSink bool
 	for {
 		if atEOF {
 			break
@@ -953,9 +954,17 @@ func (s *Session) readDimacsFile(r io.Reader) error {
 			ch1 = vals[2]
 
 			if ch1 == "s" {
+				if haveSource {
+					return fmt.Errorf("muliple 's' n lines")
+				}
 				s.source = i
+				haveSource = true
 			} else if ch1 == "t" {
+				if haveSink {
+					return fmt.Errorf("multiple 't' n lines")
+				}
 				s.sink = i
+				haveSink = true
 			} else {
 				return fmt.Errorf("unrecognized character %s on line %d", ch1, numLines)
 			}
