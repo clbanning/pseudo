@@ -250,7 +250,7 @@ type node struct {
 func (s *Session) newNode(number uint) *node {
 	return &node{
 		number:    number,
-		outOfTree: make([]*arc, int(s.numArcs)),
+		// outOfTree: make([]*arc, int(s.numArcs)),
 	}
 }
 
