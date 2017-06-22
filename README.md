@@ -8,6 +8,10 @@ A Go implementation of Hochbaum's PseudoFlow algorithm as [implemented here in C
 
 An example command-line program is cmd/pseudo/main.go.
 
+<h2>Status</h2>
+
+NOT READY FOR PRIME TIME.  We ran into some issues, yet to be resolved, testing large data sets.
+
 <h2>Prior Versions</h2>
 
 The original port of the C source code is in the subdirectory [v1.2][v1.2]. It is used in an example command-line program cmd/pseudo/main_v1.2.go.  It is fine for command-line or utility programs, but it is not safe for concurrent use in a server.
