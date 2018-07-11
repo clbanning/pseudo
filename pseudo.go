@@ -249,7 +249,7 @@ type node struct {
 // make sure everything gets allocated
 func (s *Session) newNode(number uint) *node {
 	return &node{
-		number:    number,
+		number: number,
 		// outOfTree: make([]*arc, int(s.numArcs)),
 	}
 }
@@ -475,10 +475,11 @@ func (n *node) breakRelationship(child *node) {
 		return
 	}
 
-	for current = n.childList; current != nil && current.next != child; current = current.next {
-		current.next = child.next
-		child.next = nil
+	for current = n.childList; current.next != child; current = current.next {
 	}
+
+	current.next = child.next
+	child.next = nil
 }
 
 // static inline int
@@ -1104,7 +1105,7 @@ func (s *Session) recoverFlow() {
 			}
 
 			for j = 0; j < tempNode.numberOutOfTree; j++ {
-				if tempNode.outOfTree[j].flow != 0 {
+				if tempNode.outOfTree[j].flow == 0 {
 					tempNode.numberOutOfTree--
 					tempNode.outOfTree[j] = tempNode.outOfTree[tempNode.numberOutOfTree]
 					j--
@@ -1347,7 +1348,7 @@ func quickSort(arr []*arc, first, last uint) {
 
 	// Bubble sort if 5 elements or less
 	if (right - left) <= 5 {
-		for i := right; i > left; i++ {
+		for i := right; i > left; i-- {
 			swap = nil
 			for j := left; j < i; j++ {
 				if arr[j].flow < arr[j+1].flow {
