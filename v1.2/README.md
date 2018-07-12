@@ -1,3 +1,5 @@
+THIS PACKAGE IS DEPRECATED AND UNSUPPORTED.
+
 <h2>pseudo - a Go implementation of pseudoflow algorithm</h2>
 
 A Go implementation of Hochbaum's PseudoFlow algorithm as [implemented here in C][c_ref].
