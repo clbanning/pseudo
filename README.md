@@ -10,12 +10,7 @@ An example command-line program is cmd/pseudo/main.go.
 
 <h2>Status</h2>
 
-NOT READY FOR PRIME TIME.  We ran into some issues, yet to be resolved, testing large data sets.
-
-<h2>Prior Versions</h2>
-
-The original port of the C source code is in the subdirectory [v1.2][v1.2]. It is used in an example command-line program cmd/pseudo/main_v1.2.go.  It is fine for command-line or utility programs, but it is not safe for concurrent use in a server.
+MAY NOT READY FOR PRIME TIME.  Requires more testing large data sets.
 
 [c_ref]: http://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html
 [docs]: https://godoc.org/github.com/clbanning/pseudo
-[v1.2]: https://github.com/clbanning/pseudo/v1.2
