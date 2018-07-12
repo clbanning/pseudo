@@ -65,8 +65,6 @@
 //	n 1
 //	n 3
 //
-// If you want the original v1.2 of the pseudo package for use in utility programs,
-// just import the subdirectory "github.com/clbanning/pseudo/v1.2" into your application.
 package pseudo
 
 import (
