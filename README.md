@@ -10,7 +10,7 @@ An example command-line program is cmd/pseudo/main.go.
 
 <h2>Status</h2>
 
-MAY NOT READY FOR PRIME TIME.  Requires more testing large data sets.
+MAY NOT READY FOR PRIME TIME.  Requires more testing with large data sets.
 
 [c_ref]: http://riot.ieor.berkeley.edu/Applications/Pseudoflow/maxflow.html
 [docs]: https://godoc.org/github.com/clbanning/pseudo
