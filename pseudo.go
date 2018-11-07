@@ -779,6 +779,22 @@ func (s *Session) checkOptimality(w io.Writer) error {
 // static void
 // displayCut (const uint gap)
 func (s *Session) displayCut(w io.Writer) error {
+	var err error
+	if _, err = w.Write([]byte("c Nodes in source set of min s-t cut:\n")); err != nil {
+		return err
+	}
+
+	cut := s.Cut()
+	for _, n := range cut {
+		if _, err = w.Write([]byte(fmt.Sprintf("n %d\n", n))); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Session) Cut() []uint {
 	var gap uint
 	if s.ctx.LowestLabel {
 		gap = s.lowestStrongLabel
@@ -786,20 +802,13 @@ func (s *Session) displayCut(w io.Writer) error {
 		gap = s.numNodes
 	}
 
-	var err error
-	if _, err = w.Write([]byte("c Nodes in source set of min s-t cut:\n")); err != nil {
-		return err
-	}
-
+	result := make([]uint, 0, s.numNodes)
 	for i := uint(0); i < s.numNodes; i++ {
 		if s.adjacencyList[i].label >= gap {
-			if _, err = w.Write([]byte(fmt.Sprintf("n %d\n", s.adjacencyList[i].number))); err != nil {
-				return err
-			}
+			result = append(result, s.adjacencyList[i].number)
 		}
 	}
-
-	return nil
+	return result
 }
 
 // static void
@@ -824,7 +833,9 @@ func (s *Session) displayFlow(w io.Writer) error {
 
 // ReadDimacsFile implements readDimacsFile of C source code.
 func (s *Session) readDimacsFile(r io.Reader) error {
-	var i, numLines, from, to, first, last uint
+	sessionInitializer := NewSessionInitializer(s)
+
+	var i, numLines, from, to uint
 	var capacity int
 	var ch1 string
 
@@ -880,28 +891,14 @@ func (s *Session) readDimacsFile(r io.Reader) error {
 			if err != nil {
 				return err
 			}
-			s.numNodes = uint(n)
+			numNodes := uint(n)
 			n, err = strconv.ParseUint(vals[3], 10, 64)
 			if err != nil {
 				return err
 			}
-			s.numArcs = uint(n)
+			numArcs := uint(n)
 
-			s.adjacencyList = make([]*node, s.numNodes)
-			s.strongRoots = make([]*root, s.numNodes)
-			s.labelCount = make([]uint, s.numNodes)
-			s.arcList = make([]*arc, s.numArcs)
-
-			var i uint
-			for i = 0; i < s.numNodes; i++ {
-				s.strongRoots[i] = &root{} // newRoot()
-				s.adjacencyList[i] = s.newNode(uint(i + 1))
-			}
-			for i = 0; i < s.numArcs; i++ {
-				s.arcList[i] = &arc{direction: 1} // newArc(1)
-			}
-			first = 0
-			last = s.numArcs - 1
+			sessionInitializer.Init(numNodes, numArcs)
 		case 'a':
 			vals := strings.Fields(string(line))
 			if len(vals) != 4 {
@@ -923,23 +920,7 @@ func (s *Session) readDimacsFile(r io.Reader) error {
 			}
 			capacity = int(n)
 
-			// What's the point of loading arcList this way?
-			// 	(1+3)%2 = 0 --> arcList[first]
-			// 	(1+2)%2 = 1 --> arcList[last]
-			if (from+to)%2 != 0 {
-				s.arcList[first].from = s.adjacencyList[from-1]
-				s.arcList[first].to = s.adjacencyList[to-1]
-				s.arcList[first].capacity = capacity
-				first++
-			} else {
-				s.arcList[last].from = s.adjacencyList[from-1]
-				s.arcList[last].to = s.adjacencyList[to-1]
-				s.arcList[last].capacity = capacity
-				last--
-			}
-
-			s.adjacencyList[from-1].numAdjacent++
-			s.adjacencyList[to-1].numAdjacent++
+			sessionInitializer.AddArc(from, to, capacity)
 		case 'n':
 			vals := strings.Fields(string(line))
 			if len(vals) != 3 {
@@ -956,13 +937,13 @@ func (s *Session) readDimacsFile(r io.Reader) error {
 				if haveSource {
 					return fmt.Errorf("muliple 's' n lines")
 				}
-				s.source = i
+				sessionInitializer.SetSource(i)
 				haveSource = true
 			} else if ch1 == "t" {
 				if haveSink {
 					return fmt.Errorf("multiple 't' n lines")
 				}
-				s.sink = i
+				sessionInitializer.SetSink(i)
 				haveSink = true
 			} else {
 				return fmt.Errorf("unrecognized character %s on line %d", ch1, numLines)
@@ -974,27 +955,7 @@ func (s *Session) readDimacsFile(r io.Reader) error {
 		}
 	}
 
-	for i = 0; i < s.numNodes; i++ {
-		s.adjacencyList[i].createOutOfTree()
-	}
-
-	for i = 0; i < s.numArcs; i++ {
-		to = s.arcList[i].to.number
-		from = s.arcList[i].from.number
-		capacity = s.arcList[i].capacity
-
-		if !(s.source == to || s.sink == from || from == to) {
-			if s.source == from && to == s.sink {
-				s.arcList[i].flow = capacity
-			} else if from == s.source || to != s.sink {
-				s.adjacencyList[from-1].addOutOfTreeNode(s.arcList[i])
-			} else if to == s.sink {
-				s.adjacencyList[to-1].addOutOfTreeNode(s.arcList[i])
-			} else {
-				s.adjacencyList[from-1].addOutOfTreeNode(s.arcList[i])
-			}
-		}
-	}
+	sessionInitializer.Complete()
 
 	return nil
 }
